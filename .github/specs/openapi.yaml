@@ -1,0 +1,86 @@
+openapi: 3.0.3
+info:
+  title: Commission Quote API
+  version: 1.0.0
+paths:
+  /api/v1/quotes:
+    post:
+      summary: Calculate Commission Quote
+      operationId: calculateQuote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteRequest'
+      responses:
+        '200':
+          description: Quote successfully computed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuoteResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+        '502':
+          description: Vendor API error (retries exhausted or non-retryable vendor failure)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+        '503':
+          description: Circuit breaker OPEN (retains service availability)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitOpenBody'
+components:
+  schemas:
+    QuoteRequest:
+      type: object
+      required: [loanAmount, loanTermInMonths, riskBand]
+      additionalProperties: false
+      properties:
+        loanAmount:
+          type: number
+          format: double
+          minimum: 1000
+          maximum: 10000000
+        loanTermInMonths:
+          type: integer
+          minimum: 6
+          maximum: 360
+        riskBand:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+    QuoteResponse:
+      type: object
+      properties:
+        quoteId:
+          type: string
+          format: uuid
+        commissionRate:
+          type: number
+          format: double
+          description: Decimal FRACTION at 4dp (e.g. 0.0231); UI renders x100 as percent
+        totalCommission:
+          type: number
+          format: double
+          description: Money at 2dp (HALF_EVEN)
+    ErrorBody:
+      type: object
+      properties:
+        detail:
+          type: string
+    CircuitOpenBody:
+      type: object
+      properties:
+        detail:
+          type: string
+        state:
+          type: string
+          enum: [CIRCUIT_OPEN]
