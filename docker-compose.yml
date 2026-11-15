@@ -1,12 +1,34 @@
-# Configuration Note: all knobs externalized with defaults per Architecture Specification ADR-003.
+# ==============================================================================
+# Docker Compose — Local Orchestration & Service Mesh Topology
+# ==============================================================================
+#
+# Context & Rationale:
+#   Orchestrates the 3-tier containerized stack representing the loan commission
+#   quote architecture (Frontend SPA Gateway, Backend API, and Mock Partner Vendor).
+#
+# Core Architectural Patterns:
+#   1. Zero-Ingress Internal Network (`app-network`):
+#      Services communicate over an isolated Docker bridge network using internal
+#      DNS hostnames (`http://backend:8000`, `http://mock-vendor:8001`).
+#   2. Fail-Closed Secret Injection:
+#      The upstream partner key `${VENDOR_API_KEY:?...}` is required at startup.
+#      If omitted, Compose fails immediately with a descriptive error rather
+#      than booting in an insecure or misconfigured state.
+#   3. Deterministic Startup & Health Gating:
+#      The frontend gateway explicitly waits for the backend's Spring Actuator
+#      `/actuator/health` probe to report `UP` before accepting incoming browser traffic.
+#   4. Non-Root Security (Least Privilege):
+#      All three containers execute strictly as unprivileged non-root UID 10001.
+# ==============================================================================
+
 services:
   mock-vendor:
     build: { context: ./mock-vendor }
     ports: ["${PORT_VENDOR:-8001}:8001"]
     environment:
-      # Security Note: fail closed — no dev default here. The key MUST come from
-      # the environment (see .env.example). compose refuses to start otherwise.
+      # Fail-closed credential binding: required from host environment or .env
       - VENDOR_API_KEY=${VENDOR_API_KEY:?VENDOR_API_KEY must be set - copy .env.example to .env}
+      # Stochastic fault simulation knobs (defaults defined per Architecture Specification)
       - FAULT_RATE=${FAULT_RATE:-0.2}
       - VENDOR_LATENCY_MIN_MS=${VENDOR_LATENCY_MIN_MS:-100}
       - VENDOR_LATENCY_MAX_MS=${VENDOR_LATENCY_MAX_MS:-2000}
@@ -17,11 +39,9 @@ services:
     ports: ["${PORT_BACKEND:-8000}:8000"]
     environment:
       - VENDOR_API_URL=http://mock-vendor:8001
-      # Security Note: fail closed — see the mock-vendor service note above.
       - VENDOR_API_KEY=${VENDOR_API_KEY:?VENDOR_API_KEY must be set - copy .env.example to .env}
     depends_on: [mock-vendor]
-    # Design Note: wget-based healthcheck (alpine has no curl; distroless has
-    # neither — see ADR-005)
+    # Healthcheck polling using lightweight Alpine wget (probes Spring Boot Actuator)
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://localhost:8000/actuator/health | grep -q UP"]
       interval: 5s

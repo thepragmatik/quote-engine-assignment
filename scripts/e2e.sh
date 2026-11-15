@@ -1,8 +1,31 @@
 #!/usr/bin/env bash
-# E2E verification for the Commission Quote stack (plan M5.2/M8.2).
-# Deterministic happy path first (FAULT_RATE=0), then a fault soak at 0.2.
-# Design Note: never writes .env — compose variables are passed inline so a
-# developer's own .env is never clobbered. Health is POLLED, not slept.
+# ==============================================================================
+# End-to-End (E2E) Integration & Resilience Soak Test Harness
+# ==============================================================================
+#
+# Context & Rationale:
+#   Validates the entire multi-container stack in an automated, production-like
+#   environment. Exercises the system across three sequential phases:
+#
+#   Phase 1 (Deterministic Baseline & Security Audit):
+#     - Boots the stack with FAULT_RATE=0 (flawless partner responses).
+#     - Actuator health polling (verifies graceful startup without arbitrary sleeps).
+#     - Canonical quote verification ($250k / 36m / MEDIUM -> 2.3100% / $5,775.00).
+#     - Runtime security check: asserts that all running containers report UID 10001.
+#
+#   Phase 2 (Boundary & Validation Errors):
+#     - Submits out-of-bound payloads ($999.99 loan amount).
+#     - Asserts RFC 7807 Bad Request (HTTP 400) enforcement across the network hop.
+#
+#   Phase 3 (Resilience Soak & Upstream Fault Recovery):
+#     - Re-boots the stack with active upstream turbulence (FAULT_RATE=0.2).
+#     - Executes rapid sequential quote requests to simulate real-world user load.
+#     - Asserts HTTP 200 recovery, graceful circuit handling, and 0 hangs/leaks.
+#
+# Environmental Hygiene:
+#   Never mutates or writes to host `.env` files. Variables are injected inline
+#   so developer local configurations are never clobbered.
+# ==============================================================================
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PASS=0; FAIL=0

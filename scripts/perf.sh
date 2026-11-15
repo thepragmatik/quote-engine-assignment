@@ -1,12 +1,23 @@
 #!/usr/bin/env bash
-# Automated performance test for the Commission Quote stack.
-# Usage: scripts/perf.sh [REQUESTS] [CONCURRENCY]
-#   REQUESTS     total POSTs (default 200)
-#   CONCURRENCY  parallel workers (default 8)
-# Deterministic happy path by default (FAULT_RATE=0). Set FAULT_RATE env to soak.
-# Design Note: this is a load probe, not a benchmark suite — it measures the
-# full HTTP round trip (including container network) and asserts the spec's
-# <100ms p95 NFR plus a zero-server-error budget.
+# ==============================================================================
+# Automated Performance & Latency NFR Gate Harness
+# ==============================================================================
+#
+# Context & Rationale:
+#   Validates the system's Non-Functional Requirement (NFR) that under standard
+#   operating conditions, the 95th percentile latency (p95) must remain under 100ms.
+#
+# Methodology:
+#   1. Warms up the JVM JIT compiler with 3 pre-test requests.
+#   2. Executes N requests across C concurrent workers using `xargs -P`.
+#   3. Captures microsecond-accurate HTTP round-trip timing and status codes.
+#   4. Evaluates statistical percentiles (p50, p95, p99) and enforces an exit
+#      code gate if p95 exceeds 100ms or unexpected server errors occur.
+#
+# Usage:
+#   scripts/perf.sh [REQUESTS] [CONCURRENCY]
+#   e.g. ./scripts/perf.sh 200 8
+# ==============================================================================
 set -euo pipefail
 cd "$(dirname "$0")/.."
 REQUESTS="${1:-200}"
