@@ -91,6 +91,12 @@ commission matrix, all Resilience4j parameters.
     Zod schemas enforce bidirectional compile-time type assertions.
   - Backend: `OpenApiContractDriftTest` parses `openapi.yaml` during every `mvn test`,
     asserting that Java DTO records and Bean Validation annotations match the spec.
+- **Enterprise Banking Production Roadmap (ADR-008):** Complete specification for transitioning
+  this MVP into a live regulated banking institution under APRA CPS 234 / PCI-DSS compliance:
+  Mutual TLS 1.3 (mTLS) with short-lived X.509 cert rotation, private VPC subnets with zero
+  public ingress on backend/vendor, AWS Secrets Manager / Vault with KMS envelope encryption,
+  Cloudflare / AWS WAF with IP rate-limiting and DDoS mitigation, immutable WORM audit logs
+  streamed to SIEM (Splunk/Datadog), and container signing via Cosign.
 
 ## Performance (NFR)
 

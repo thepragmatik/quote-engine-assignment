@@ -1,0 +1,95 @@
+name: Continuous Integration & Quality Gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend Verification (Java 25 LTS & Spring Boot 4.1.2)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up OpenJDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Verify Backend (Spotless, SpotBugs, JaCoCo >= 80%, Tests)
+        run: |
+          cd backend
+          mvn verify -Ddependency-check.skip=true
+
+  mock-vendor:
+    name: Mock Vendor Verification (Java 25 LTS & Spring Boot 4.1.2)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up OpenJDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Verify Mock Vendor (Spotless, SpotBugs, JaCoCo >= 80%, Tests)
+        run: |
+          cd mock-vendor
+          mvn verify -Ddependency-check.skip=true
+
+  frontend:
+    name: Frontend Verification (React 18 & Vite)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Verify OpenAPI Contract Drift
+        run: |
+          cd frontend
+          npm run codegen
+          git diff --exit-code src/api/generated.ts || (echo "Frontend generated types drifted from .github/specs/openapi.yaml! Run npm run codegen." && exit 1)
+
+      - name: Run Vitest Suite (Unit, Adversarial, Contract Drift)
+        run: |
+          cd frontend
+          npm test
+
+      - name: Build Production Bundle
+        run: |
+          cd frontend
+          npm run build
+
+  e2e:
+    name: Docker Compose Integration & End-to-End Suite
+    needs: [backend, mock-vendor, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Run End-to-End Suite (Deterministic Contract + Fault Soak)
+        env:
+          VENDOR_API_KEY: dev-vendor-secret
+        run: |
+          ./scripts/e2e.sh

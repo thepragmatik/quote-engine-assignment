@@ -86,6 +86,17 @@ the FR-3 example discrepancy.
 Every judgment call in the code carries `// ATTENTION(kind): ...`; grep
 `ATTENTION(` for the full index.
 
+## Production Banking Readiness (APRA CPS 234 / PCI-DSS)
+
+For complete technical specifications on elevating this local containerized MVP to an enterprise
+regulated banking deployment, see **[ADR-008](docs/adr/ADR-008-production-banking-readiness.md)**:
+- **Mutual TLS (mTLS 1.3)**: Zero-trust encrypted inter-service transport via Service Mesh (Istio) or Spring Boot SSL bundles.
+- **Network Segmentation**: ALB in public subnets; backend and vendor isolated in private VPC subnets with zero public ingress.
+- **Centralized Secrets**: AWS Secrets Manager / HashiCorp Vault with KMS CMK envelope encryption and automated 30-day rotation.
+- **Edge WAF & DDoS Protection**: AWS WAF / Cloudflare rate-limiting, bot control, and CRS inspection.
+- **Audit Logging & SIEM**: Immutable WORM audit logs with correlation IDs (`traceId`, `spanId`) streamed to Splunk / Datadog.
+- **Supply Chain Security**: Cosign container signing, CycloneDX SBOM generation, and Trivy CVE scanning in CI/CD.
+
 ## Architecture Decision Records (ADRs)
 
 - **[ADR-001](docs/adr/ADR-001-platform-choice.md):** Java 25 LTS & Spring Boot 4.1.2 Platform Choice
@@ -95,3 +106,4 @@ Every judgment call in the code carries `// ATTENTION(kind): ...`; grep
 - **[ADR-005](docs/adr/ADR-005-spec-deviations.md):** Spec Deviations & Merged Business Rules
 - **[ADR-006](docs/adr/ADR-006-loan-bounds-constants.md):** Loan Policy Bounds Are Compile-Time Constants
 - **[ADR-007](docs/adr/ADR-007-contract-first-schema-sync.md):** Contract-First API Specification & Schema Evolution
+- **[ADR-008](docs/adr/ADR-008-production-banking-readiness.md):** Production Readiness & Regulated Banking Architecture Roadmap
