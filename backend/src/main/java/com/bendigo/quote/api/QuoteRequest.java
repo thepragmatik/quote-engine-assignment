@@ -23,8 +23,7 @@ import java.math.BigDecimal;
  *     MEDIUM}, or {@code HIGH}
  */
 @JsonIgnoreProperties(
-    ignoreUnknown =
-        false) // ATTENTION(security): sanitization control — unknown fields are rejected
+    ignoreUnknown = false) // Security Note: sanitization control — unknown fields are rejected
 public record QuoteRequest(
     @NotNull(message = LOAN_AMOUNT_REQUIRED_MSG)
         @DecimalMin(value = MIN_LOAN_AMOUNT_STR, message = LOAN_AMOUNT_RANGE_MSG)

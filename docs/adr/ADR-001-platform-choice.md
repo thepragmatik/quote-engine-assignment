@@ -1,11 +1,11 @@
 # ADR-001: Java 25 LTS & Spring Boot 4.1.2 Platform Choice
 
 ## Status
-Accepted (2026-11-15). **Deviation from MISSION_v2 §1** ("Java 21 LTS, Spring Boot 3.3+"),
+Accepted (2026-11-15). **Deviation from Architecture Specification §1** ("Java 21 LTS, Spring Boot 3.3+"),
 user-directed.
 
 ## Context
-MISSION_v2 standardizes on enterprise Java banking technology. The user directed
+the Technical Specification standardizes on enterprise Java banking technology. The user directed
 use of the latest LTS Java (25) and the newest Boot release compatible with it.
 
 ## Decision

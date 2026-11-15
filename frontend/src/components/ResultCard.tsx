@@ -12,7 +12,7 @@ export interface ResultCardProps {
  * Visual card displaying the calculated quote outcome.
  *
  * @remarks
- * ATTENTION(design): The backend API emits `commissionRate` as a decimal fraction (e.g. `0.0231`).
+ * Design Note: The backend API emits `commissionRate` as a decimal fraction (e.g. `0.0231`).
  * This component performs display-only percentage conversion: multiplying by 100, formatting to 4
  * decimal places, and appending a `%` symbol (e.g. `2.3100%`).
  *

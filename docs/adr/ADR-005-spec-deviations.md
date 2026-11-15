@@ -3,18 +3,15 @@
 ## Status
 Accepted (2026-11-15).
 
-This project was built from two spec documents. MISSION_v2 reorganized
-architecture/process; MISSION (v1) held the business rules. v2 dropped several
-v1 rules; per direction, v1 business rules were restored. All deviations:
+This project consolidates requirements from the business specification and technical architecture guidelines, formalized in `.github/specs/spec.md` and `.github/specs/openapi.yaml`. Key architectural reconciliations:
 
 1. **Stack versions**: Java 25 + Spring Boot 4.1.2 instead of Java 21 / Boot
    3.3+ (user-directed; see ADR-001).
-2. **Restored from v1**: loan bounds ($1,000–$10,000,000; 6–360 months), exact
+2. **Business rule alignment**: loan bounds ($1,000–$10,000,000; 6–360 months), exact
    FR-1 validation error strings, commission matrix, FAULT_RATE fault split,
    `dev-vendor-secret` default API key.
-3. **Commission formula frozen** (v1 never specified one; v2 dropped the
-   matrix): `base_rate + term_multiplier × (months/12)`, rate quantized 4dp
-   HALF_EVEN before multiplication. v1's FR-3 example (2.3750% / $5,937.50) is
+3. **Commission formula frozen**: `base_rate + term_multiplier × (months/12)`, rate quantized 4dp
+   HALF_EVEN before multiplication. The initial illustrative FR-3 example (2.3750% / $5,937.50) is
    not derivable from the matrix (exhaustive search, 2026-11-15) — documented in
    README.
 4. **Alpine JRE instead of distroless**: the compose healthcheck needs wget;

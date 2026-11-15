@@ -51,7 +51,7 @@ export class QuoteHttpError extends Error {
  * Submits validated loan parameters to the backend quotation endpoint.
  *
  * @remarks
- * ATTENTION(design): Employs a same-origin relative path (`/api/v1/quotes`).
+ * Design Note: Employs a same-origin relative path (`/api/v1/quotes`).
  * In containerized deployment, the local nginx reverse proxy routes `/api/*` to the Spring Boot
  * backend on port 8000. In local Vite development, `vite.config.ts` proxies `/api` identically.
  * This completely eliminates cross-origin CORS overhead and bypasses Vite build-time environment inlining.

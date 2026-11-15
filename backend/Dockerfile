@@ -1,19 +1,19 @@
-# ATTENTION(design): multi-stage Maven build. Alpine JRE (not distroless) so the
-# compose healthcheck can use wget — deviation from MISSION_v2 §6 documented in ADR-005.
+# Design Note: multi-stage Maven build. Alpine JRE (not distroless) so the
+# compose healthcheck can use wget — deviation from Architecture Specification §6 documented in ADR-005.
 FROM maven:3.9-eclipse-temurin-25 AS build
 WORKDIR /app
 COPY pom.xml .
 COPY spotbugs-exclude.xml* ./
 RUN mvn -q dependency:go-offline
 COPY src ./src
-# ATTENTION(design): run the full gate suite (unit+integration tests, SpotBugs,
+# Design Note: run the full gate suite (unit+integration tests, SpotBugs,
 # JaCoCo 80%) INSIDE the image build so shipped images cannot bypass quality —
 # OWASP stays skipped here: the NVD download inside a build container is neither
 # cacheable nor reliable; it runs at host `mvn verify` (see README disclosures).
 RUN mvn -q verify -Ddependency-check.skip=true
 
 FROM eclipse-temurin:25-jre-alpine
-# ATTENTION(security): non-root UID 10001 per MISSION_v2 §6
+# Security Note: non-root UID 10001 per Architecture Specification §6
 RUN adduser -u 10001 -D appuser
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar

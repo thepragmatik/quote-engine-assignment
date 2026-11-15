@@ -4,7 +4,7 @@
 #   REQUESTS     total POSTs (default 200)
 #   CONCURRENCY  parallel workers (default 8)
 # Deterministic happy path by default (FAULT_RATE=0). Set FAULT_RATE env to soak.
-# ATTENTION(design): this is a load probe, not a benchmark suite — it measures the
+# Design Note: this is a load probe, not a benchmark suite — it measures the
 # full HTTP round trip (including container network) and asserts the spec's
 # <100ms p95 NFR plus a zero-server-error budget.
 set -euo pipefail

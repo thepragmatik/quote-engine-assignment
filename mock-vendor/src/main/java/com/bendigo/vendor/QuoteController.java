@@ -51,7 +51,7 @@ public class QuoteController {
   @PostMapping(VENDOR_QUOTES_PATH)
   public ResponseEntity<Map<String, Object>> quote(
       @RequestHeader(value = API_KEY_HEADER, required = false) String apiKey) {
-    // ATTENTION(security): the API key is compared per request, in constant time —
+    // Security Note: the API key is compared per request, in constant time —
     // a plain String.equals leaks key length/prefix via timing.
     String expectedKey = env.getProperty("vendor.api-key", "");
     byte[] given = apiKey == null ? new byte[0] : apiKey.getBytes(StandardCharsets.UTF_8);
@@ -80,7 +80,7 @@ public class QuoteController {
   }
 
   private void sleepRandomLatency() {
-    // ATTENTION(config): defaults live ONLY in application.yml (Rule 2) — no second
+    // Configuration Note: defaults live ONLY in application.yml (Rule 2) — no second
     // source of truth here.
     long minMs = Long.parseLong(env.getProperty("vendor.latency-min-ms"));
     long maxMs = Long.parseLong(env.getProperty("vendor.latency-max-ms"));

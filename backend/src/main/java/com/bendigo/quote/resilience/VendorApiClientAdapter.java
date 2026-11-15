@@ -67,7 +67,7 @@ public class VendorApiClientAdapter implements VendorQuotePort {
       @Value("${vendor.connect-timeout:1s}") Duration connectTimeout,
       @Value("${vendor.read-timeout:2s}") Duration readTimeout,
       ObjectProvider<VendorApiClientAdapter> selfProvider) {
-    // ATTENTION(security): fail fast on a hostile or misconfigured VENDOR_API_URL.
+    // Security Note: fail fast on a hostile or misconfigured VENDOR_API_URL.
     // Verifies scheme and host upfront to safeguard against SSRF or unencrypted credential egress.
     validateApiUrl(apiUrl);
 
@@ -75,7 +75,7 @@ public class VendorApiClientAdapter implements VendorQuotePort {
         restClientBuilder
             .baseUrl(apiUrl)
             .defaultHeader("x-api-key", apiKey)
-            // ATTENTION(resilience): enforce physical socket timeouts matching the TimeLimiter
+            // Resilience Note: enforce physical socket timeouts matching the TimeLimiter
             .requestFactory(httpRequestFactory(connectTimeout, readTimeout))
             .build();
     this.selfProvider = selfProvider;
@@ -109,7 +109,7 @@ public class VendorApiClientAdapter implements VendorQuotePort {
   @CircuitBreaker(name = "vendor", fallbackMethod = "circuitFallback")
   public VendorVerification verify(BigDecimal loanAmount, int termMonths, String riskBand) {
     try {
-      // ATTENTION(resilience): dispatch through the AOP proxy provider so @TimeLimiter fires
+      // Resilience Note: dispatch through the AOP proxy provider so @TimeLimiter fires
       return selfProvider.getObject().callVendorOnce(loanAmount, termMonths, riskBand).join();
     } catch (CompletionException e) {
       Throwable cause = e.getCause() == null ? e : e.getCause();
@@ -119,7 +119,7 @@ public class VendorApiClientAdapter implements VendorQuotePort {
       if (cause instanceof VendorServiceUnavailableException unavailable) {
         throw unavailable;
       }
-      // ATTENTION(resilience): the raw HTTP call now has its own read timeout (2s),
+      // Resilience Note: the raw HTTP call now has its own read timeout (2s),
       // so a slow vendor can surface here as ResourceAccessException/IOException
       // racing the TimeLimiter — map it to the retryable path either way.
       if (cause instanceof java.io.IOException
@@ -146,9 +146,8 @@ public class VendorApiClientAdapter implements VendorQuotePort {
   /**
    * Fallback invoked strictly when the CircuitBreaker is in the OPEN state.
    *
-   * <p>ATTENTION(resilience): The signature narrows the parameter to {@link
-   * CallNotPermittedException} so that exhausted retries or network errors bubbling up from {@link
-   * #verify} are not caught here.
+   * <p>Resilience Note: The signature narrows the parameter to {@link CallNotPermittedException} so
+   * that exhausted retries or network errors bubbling up from {@link #verify} are not caught here.
    */
   private VendorVerification circuitFallback(
       BigDecimal loanAmount, int termMonths, String riskBand, CallNotPermittedException ex) {
@@ -186,7 +185,7 @@ public class VendorApiClientAdapter implements VendorQuotePort {
     } catch (ResourceAccessException e) {
       throw new RetryableVendorException("Vendor network failure", e);
     } catch (RestClientException e) {
-      // ATTENTION(resilience): RestClient wraps raw socket/connect timeouts in a plain
+      // Resilience Note: RestClient wraps raw socket/connect timeouts in a plain
       // RestClientException (not a ResourceAccessException) — classify by root cause.
       if (rootCauseIsTransientIo(e)) {
         throw new RetryableVendorException("Vendor call timed out or connection failure", e);

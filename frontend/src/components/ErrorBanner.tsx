@@ -24,7 +24,7 @@ export interface ErrorBannerProps {
  * Client-side debounce interval in milliseconds applied to the Retry button.
  *
  * @remarks
- * ATTENTION(design): Enforces a 2-second rate limit on manual retries to prevent
+ * Design Note: Enforces a 2-second rate limit on manual retries to prevent
  * frustrated users from hammering upstream services during degraded operations (spec §5).
  */
 const RETRY_DEBOUNCE_MS = 2000

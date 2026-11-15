@@ -25,9 +25,9 @@ import java.util.random.RandomGenerator;
  * <p>At default {@code FAULT_RATE = 0.20}, the outcome split is: <b>80% OK / 10% HTTP 500 / 5% HTTP
  * 400 / 5% HTTP 504 (latency)</b>.
  *
- * <p>ATTENTION(resilience): The classifier method {@link #classify(double)} is a pure,
- * deterministic mathematical function, completely isolated from random draw generation to enable
- * comprehensive unit test verification.
+ * <p>Resilience Note: The classifier method {@link #classify(double)} is a pure, deterministic
+ * mathematical function, completely isolated from random draw generation to enable comprehensive
+ * unit test verification.
  *
  * @param random the random number generator used for stochastic draws
  * @param faultRate the configured fractional probability of injecting a fault (0.0 to 1.0)
@@ -53,7 +53,7 @@ public record FaultEngine(RandomGenerator random, double faultRate) {
     if (r >= faultRate) {
       return Outcome.OK;
     }
-    // ATTENTION(resilience): round partition thresholds to 4 decimal places to prevent IEEE 754
+    // Resilience Note: round partition thresholds to 4 decimal places to prevent IEEE 754
     // binary floating-point epsilon dust (e.g. 0.2 * 0.75 evaluating to 0.15000000000000002).
     double errorThreshold =
         Math.round(faultRate * ERROR_PARTITION_RATIO * SCALE_FACTOR) / SCALE_FACTOR;

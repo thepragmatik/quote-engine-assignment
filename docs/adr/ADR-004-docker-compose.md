@@ -1,7 +1,7 @@
 # ADR-004: Multi-Container Orchestration via Docker Compose
 
 ## Status
-Accepted (per MISSION_v2 ADR-004).
+Accepted (per Architecture Specification ADR-004).
 
 ## Decision
 One `docker-compose.yml` at the monorepo root builds and wires all three

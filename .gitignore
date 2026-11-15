@@ -2,6 +2,7 @@
 prep/
 .hermes/
 ATTENTIONS.md
+MISSION*.md
 
 # Environment & Secrets (NEVER COMMIT SENSITIVE KEYS)
 .env

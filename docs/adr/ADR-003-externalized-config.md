@@ -1,7 +1,7 @@
 # ADR-003: Externalized Configuration
 
 ## Status
-Accepted (per MISSION_v2 ADR-003).
+Accepted (per Architecture Specification ADR-003).
 
 ## Decision
 All dynamic business rules, keys, ports and simulator fault rates are injected

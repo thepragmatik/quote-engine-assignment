@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 /**
  * Outbound Data Transfer Object (DTO) returning calculated commission quote details.
  *
- * <p>ATTENTION(money): Monetary values and percentage rates are represented as {@link BigDecimal}
+ * <p>Precision Note: Monetary values and percentage rates are represented as {@link BigDecimal}
  * directly to preserve Banker's Rounding precision without IEEE 754 binary floating-point
  * distortion.
  *

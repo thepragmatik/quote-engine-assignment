@@ -1,4 +1,4 @@
-# ATTENTION(resilience): test-profile overrides for deterministic, fast circuit tests.
+# Resilience Note: test-profile overrides for deterministic, fast circuit tests.
 resilience4j:
   circuitbreaker:
     instances:

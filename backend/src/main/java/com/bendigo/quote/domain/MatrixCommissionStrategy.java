@@ -61,13 +61,13 @@ public final class MatrixCommissionStrategy implements CommissionCalculationStra
       throw new InvalidLoanParameterException(QuoteRequest.RISK_BAND_MSG);
     }
 
-    // ATTENTION(money): plain divide() throws ArithmeticException for non-terminating quotients
+    // Precision Note: plain divide() throws ArithmeticException for non-terminating quotients
     // (e.g. 8/12 = 2/3); use an explicit intermediate scale of 10 decimal places.
     var years =
         BigDecimal.valueOf(termMonths)
             .divide(MONTHS_PER_YEAR, YEARS_DIVISION_SCALE, RoundingMode.HALF_EVEN);
 
-    // ATTENTION(money): rate is quantized to 4dp BEFORE multiplying by the amount (frozen rule).
+    // Precision Note: rate is quantized to 4dp BEFORE multiplying by the amount (frozen rule).
     var unscaledRate = spec.baseRate().add(spec.termMultiplier().multiply(years));
     var rate = MoneyPolicy.roundRate4(unscaledRate);
 

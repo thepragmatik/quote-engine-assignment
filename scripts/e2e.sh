@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # E2E verification for the Commission Quote stack (plan M5.2/M8.2).
 # Deterministic happy path first (FAULT_RATE=0), then a fault soak at 0.2.
-# ATTENTION(design): never writes .env — compose variables are passed inline so a
+# Design Note: never writes .env — compose variables are passed inline so a
 # developer's own .env is never clobbered. Health is POLLED, not slept.
 set -euo pipefail
 cd "$(dirname "$0")/.."

@@ -13,8 +13,7 @@ require compile-time constants, so these bounds cannot be read from
 
 ## Decision
 1. Bounds and messages stay as compile-time constants, but in ONE place per
-   layer (`QuoteRequest` annotations; `quoteSchema.ts`) with ATTENTION(config)
-   comments — never duplicated elsewhere in the backend.
+   layer (`QuoteRequest` annotations; `quoteSchema.ts`) with Configuration Note: comments — never duplicated elsewhere in the backend.
 2. If a deployment ever needs runtime-configurable limits, the swap path is a
    programmatic validator (Spring `Validator` reading a
    `@ConfigurationProperties LoanLimits`) replacing the annotations — a single

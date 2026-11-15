@@ -24,14 +24,14 @@ HALF_EVEN to 4dp BEFORE multiplying, then quantize total HALF_EVEN to 2dp.
 
 Canonical example: $250,000 / 36 months / MEDIUM → 0.0225 + 0.0002×3 = 0.0231 → $5,775.00.
 
-NOTE (spec discrepancy): MISSION v1's FR-3 example (2.3750% / $5,937.50) is NOT
-derivable from the v1 matrix under any natural formula reading (verified by
+NOTE (spec discrepancy): The initial prompt's worked example (2.3750% / $5,937.50) is NOT
+derivable from the specified matrix under any natural formula reading (verified by
 exhaustive search 2026-11-15). Treat it as illustrative only.
 
-## Rule 5 — ATTENTION annotations
-Every judgment call in code carries `// ATTENTION(kind): ...` (kinds: design,
-security, money, resilience, config, spec-gap). A grep over `ATTENTION(` must
-enumerate all such decisions.
+## Rule 5 — Architectural & Technical Annotations
+Every judgment call in code carries clear contextual notes (e.g., Security Note,
+Resilience Note, Precision Note, Design Note, Configuration Note) explaining why the
+decision was made.
 
 ## Rule 6 — Swappable seams
 Controllers depend on interfaces only: `CommissionCalculationStrategy`,

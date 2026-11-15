@@ -23,7 +23,7 @@ export const RISK_BAND_ERROR = 'Please select a valid risk band.'
  * Zod validation schema for client-side loan quote requests.
  *
  * @remarks
- * ATTENTION(security): This schema strictly mirrors the server-side Jakarta Bean Validation
+ * Security Note: This schema strictly mirrors the server-side Jakarta Bean Validation
  * annotations on {@code QuoteRequest} and the OpenAPI specification in {@code .github/specs/openapi.yaml}.
  *
  * Compile-time type assertions below guarantee that this runtime Zod schema evolves in tandem

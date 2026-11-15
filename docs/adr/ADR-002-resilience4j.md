@@ -1,7 +1,7 @@
 # ADR-002: Resilience4j for Inter-Service Fault Tolerance
 
 ## Status
-Accepted (per MISSION_v2 §4).
+Accepted (per Architecture Specification §4).
 
 ## Context
 The vendor API injects 400/500/504 and 100–2000ms latency faults. The backend

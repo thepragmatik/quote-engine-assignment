@@ -39,7 +39,7 @@ export default function QuoteForm() {
   const submit = async (e?: React.FormEvent) => {
     e?.preventDefault()
 
-    // ATTENTION(design): guard against concurrent double-click submissions
+    // Design Note: guard against concurrent double-click submissions
     if (submitting) return
 
     const parsed = quoteSchema.safeParse({

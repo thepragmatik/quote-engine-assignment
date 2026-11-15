@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
 public class CommissionConfig {
 
   /**
-   * ATTENTION(design): Single wiring point for the commission calculation engine.
+   * Design Note: Single wiring point for the commission calculation engine.
    *
    * <p>Decouples implementation choices from the web layer. Swap alternatives:
    *

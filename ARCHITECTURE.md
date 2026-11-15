@@ -83,8 +83,8 @@ the FR-3 example discrepancy.
 | `FaultEngine` | seeded RandomGenerator | scripted chaos profiles |
 | frontend `quote.ts` | same-origin fetch | direct URL / react-query |
 
-Every judgment call in the code carries `// ATTENTION(kind): ...`; grep
-`ATTENTION(` for the full index.
+Every judgment call in the code carries `// Note(kind): ...`; grep
+`Note(` for the full index.
 
 ## Production Banking Readiness (APRA CPS 234 / PCI-DSS)
 

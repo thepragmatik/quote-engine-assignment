@@ -1,21 +1,21 @@
 server:
   port: 8000
 
-# ATTENTION(security): strict deserialization — unknown properties in request bodies are rejected
+# Security Note: strict deserialization — unknown properties in request bodies are rejected
 # (Jackson 3 flipped the 2.x default to lenient; the QuoteRequest annotation alone is not enough).
 spring:
   jackson:
     deserialization:
       fail-on-unknown-properties: true
 
-# ATTENTION(config): pricing matrix is externalized — rate changes must not require recompiling.
+# Configuration Note: pricing matrix is externalized — rate changes must not require recompiling.
 commission:
   matrix:
     LOW: { base-rate: "0.0150", term-multiplier: "0.0001" }
     MEDIUM: { base-rate: "0.0225", term-multiplier: "0.0002" }
     HIGH: { base-rate: "0.0350", term-multiplier: "0.0003" }
 
-# ATTENTION(resilience): circuit opens at >=50% failures over a 10-call sliding window once at
+# Resilience Note: circuit opens at >=50% failures over a 10-call sliding window once at
 # least 5 calls are recorded; slow calls (>1500ms) count toward both thresholds; 10s open pause.
 resilience4j:
   circuitbreaker:
@@ -27,12 +27,12 @@ resilience4j:
         slow-call-rate-threshold: 50
         slow-call-duration-threshold: 1500ms
         wait-duration-in-open-state: 10s
-        # ATTENTION(resilience): non-transient faults (vendor 400/401) must NOT trip the
+        # Resilience Note: non-transient faults (vendor 400/401) must NOT trip the
         # breaker — a bad API key is a permanent misconfiguration, not an outage; without
         # this the circuit would OPEN and clients would see 503 for an auth problem.
         ignore-exceptions:
           - com.bendigo.quote.resilience.VendorServiceUnavailableException
-  # ATTENTION(resilience): 3 attempts with exponential backoff + jitter; retries ONLY on
+  # Resilience Note: 3 attempts with exponential backoff + jitter; retries ONLY on
   # transient faults (500/504-mapped exceptions and raw IOExceptions) — 400/401 fail fast.
   retry:
     instances:
@@ -46,13 +46,13 @@ resilience4j:
         retry-exceptions:
           - java.io.IOException
           - com.bendigo.quote.resilience.RetryableVendorException
-  # ATTENTION(resilience): time limiter bounds ONE raw vendor attempt, not the whole retry chain.
+  # Resilience Note: time limiter bounds ONE raw vendor attempt, not the whole retry chain.
   timelimiter:
     instances:
       vendor:
         timeout-duration: 2s
 
-# ATTENTION(config): vendor endpoint + key fully externalized; dev defaults for local runs only.
+# Configuration Note: vendor endpoint + key fully externalized; dev defaults for local runs only.
 vendor:
   api-url: ${VENDOR_API_URL:http://mock-vendor:8001}
   api-key: ${VENDOR_API_KEY:dev-vendor-secret}

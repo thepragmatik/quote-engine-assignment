@@ -41,7 +41,7 @@ The risk matrix (externalized in `application.yml`):
 → rate = 0.0225 + 0.0002 × (36/12) = **0.0231** (2.3100%)
 → total = 250,000 × 0.0231 = **$5,775.00**
 
-> ⚠️ **Known spec discrepancy:** MISSION v1's FR-3 example (2.3750% / $5,937.50)
+> ⚠️ **Known spec discrepancy:** the Functional Specification's FR-3 example (2.3750% / $5,937.50)
 > cannot be derived from the matrix under any natural formula reading — an
 > exhaustive search over per-term, per-month, sqrt, squared and multiplicative
 > variants (2026-11-15) found no exact match (hitting 0.02375 would require a
@@ -140,7 +140,7 @@ wrong/missing content-type, GET on POST route, path traversal, spoofed
 - **503 + `state: CIRCUIT_OPEN`** body is our extension to the inherited OpenAPI
   (needed to drive the UI's circuit-open banner) — ADR-005.
 - **Business rules restored from v1** (input bounds, exact error strings,
-  matrix, fault split) because MISSION_v2 dropped them — ADR-005.
+  matrix, fault split) because the Technical Specification dropped them — ADR-005.
 - OWASP dependency-check runs at `verify`; the `-Ddependency-check.skip=true`
   escape hatch is only used when the NVD is unreachable. **Status: the recorded
   full-gate run on 2026-11-15 used the skip** — the NVD API returned HTTP 524
@@ -154,4 +154,4 @@ wrong/missing content-type, GET on POST route, path traversal, spoofed
 This application was built with AI assistance (Hermes Agent orchestrating
 specialist subagents). The spec, plan review, commit discipline, verification
 runs and final review were human-supervised. Detailed decision trail:
-`.github/specs/spec.md`, `docs/adr/`, and the `ATTENTION(` annotations in code.
+`.github/specs/spec.md`, `docs/adr/`, and the contextual engineering notes in code.

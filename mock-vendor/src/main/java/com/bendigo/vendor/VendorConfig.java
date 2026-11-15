@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 public class VendorConfig {
 
   /**
-   * ATTENTION(resilience): Bean definition providing the active {@link FaultEngine}.
+   * Resilience Note: Bean definition providing the active {@link FaultEngine}.
    *
    * <p>Serves as the primary swap seam: integration test suites replace this with a mock or
    * fixed-seed generator to assert fault responses deterministically, and alternative chaos

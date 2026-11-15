@@ -6,12 +6,12 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * Web security and CORS configuration satisfying MISSION_v2 Section 6: "Frontend-to-Backend: Strict
- * input sanitization, Zod schema validation on entry, CORS origin restriction, and standard browser
- * security headers (CSP, X-Frame-Options, HSTS)."
+ * Web security and CORS configuration satisfying the Technical Specification Section 6:
+ * "Frontend-to-Backend: Strict input sanitization, Zod schema validation on entry, CORS origin
+ * restriction, and standard browser security headers (CSP, X-Frame-Options, HSTS)."
  *
- * <p>ATTENTION(security): Even though production browser traffic routes through the same-origin
- * nginx reverse proxy, the backend REST API directly enforces CORS origin restrictions so that
+ * <p>Security Note: Even though production browser traffic routes through the same-origin nginx
+ * reverse proxy, the backend REST API directly enforces CORS origin restrictions so that
  * unauthorized external web origins cannot issue cross-origin requests to port 8000.
  */
 @Configuration

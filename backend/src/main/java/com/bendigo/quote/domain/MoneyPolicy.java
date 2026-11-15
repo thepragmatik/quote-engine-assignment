@@ -26,7 +26,7 @@ public final class MoneyPolicy {
   /**
    * Quantizes a commission rate fraction to 4 decimal places using Banker's Rounding (HALF_EVEN).
    *
-   * <p>ATTENTION(money): Rate quantization occurs prior to monetary multiplication to guarantee
+   * <p>Precision Note: Rate quantization occurs prior to monetary multiplication to guarantee
    * deterministic fee computation across disparate platforms and client display layers.
    *
    * @param value unscaled rate fraction
@@ -43,7 +43,7 @@ public final class MoneyPolicy {
    * Rounds a monetary payout amount to standard currency resolution (2 decimal places / cents)
    * using Banker's Rounding (HALF_EVEN).
    *
-   * <p>ATTENTION(money): All currency totals must pass through this method.
+   * <p>Precision Note: All currency totals must pass through this method.
    *
    * @param value unscaled monetary amount
    * @return currency amount rounded to 2 decimal places (e.g. {@code 5775.00})

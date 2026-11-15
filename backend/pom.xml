@@ -17,12 +17,12 @@
   <name>Commission Quote Backend</name>
 
   <properties>
-    <!-- ATTENTION(config): Java 25 LTS + Spring Boot 4.1.2 (user-directed, supersedes
-         MISSION_v2's Java 21 / Boot 3.3+; Boot 4.1.2 supports Java 17..27). -->
+    <!-- Configuration Note: Java 25 LTS + Spring Boot 4.1.2 (user-directed, supersedes
+         the Technical Specification's Java 21 / Boot 3.3+; Boot 4.1.2 supports Java 17..27). -->
     <java.version>25</java.version>
   </properties>
 
-  <!-- ATTENTION(config): wiremock-jetty12 3.13.2 is built against Jetty 12.0.x; Boot 4.1.2
+  <!-- Configuration Note: wiremock-jetty12 3.13.2 is built against Jetty 12.0.x; Boot 4.1.2
        manages Jetty 12.1.x (incompatible Environment.ensure signature) -> pin the Jetty BOMs
        WireMock needs. Runtime stays on Tomcat; this only affects the test classpath. -->
   <dependencyManagement>
@@ -57,18 +57,18 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
-    <!-- ATTENTION(resilience): resilience4j-spring-boot4 requires spring-boot-starter-aspectj -->
+    <!-- Resilience Note: resilience4j-spring-boot4 requires spring-boot-starter-aspectj -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-aspectj</artifactId>
     </dependency>
-    <!-- ATTENTION(config): Boot 4 modularized — RestClient.Builder autoconfiguration is no
+    <!-- Configuration Note: Boot 4 modularized — RestClient.Builder autoconfiguration is no
          longer pulled in by starter-web; it needs its own starter. -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-restclient</artifactId>
     </dependency>
-    <!-- ATTENTION(resilience): Boot-4-native module (2.4.0, 2026-03-14).
+    <!-- Resilience Note: Boot-4-native module (2.4.0, 2026-03-14).
          Do NOT use resilience4j-spring-boot3 with Boot 4. -->
     <dependency>
       <groupId>io.github.resilience4j</groupId>
@@ -80,7 +80,7 @@
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- ATTENTION(config): Boot 4 split test autoconfiguration — MockMvc/@WebMvcTest live in
+    <!-- Configuration Note: Boot 4 split test autoconfiguration — MockMvc/@WebMvcTest live in
          spring-boot-starter-webmvc-test (annotations moved to
          org.springframework.boot.webmvc.test.autoconfigure). -->
     <dependency>
@@ -88,7 +88,7 @@
       <artifactId>spring-boot-starter-webmvc-test</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- ATTENTION(design): wiremock-jetty12 avoids the httpclient5 NoSuchMethodError
+    <!-- Design Note: wiremock-jetty12 avoids the httpclient5 NoSuchMethodError
          that the plain org.wiremock:wiremock artifact hits on Boot 4. -->
     <dependency>
       <groupId>org.wiremock</groupId>
@@ -121,7 +121,7 @@
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
-        <!-- ATTENTION(config): 4.8.6.6 cannot read Java 25 class files (v69); SpotBugs >= 4.9.7 required -->
+        <!-- Configuration Note: 4.8.6.6 cannot read Java 25 class files (v69); SpotBugs >= 4.9.7 required -->
         <version>4.10.5.0</version>
         <configuration>
           <excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
@@ -136,7 +136,7 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <!-- ATTENTION(config): 0.8.14 minimum for Java 25 class files (v69) -->
+        <!-- Configuration Note: 0.8.14 minimum for Java 25 class files (v69) -->
         <version>0.8.14</version>
         <executions>
           <execution><goals><goal>prepare-agent</goal></goals></execution>

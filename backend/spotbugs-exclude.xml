@@ -6,7 +6,7 @@
     <Class name="com.bendigo.quote.domain.RiskBandMatrix"/>
     <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
   </Match>
-  <!-- ATTENTION(security): constructor throws on a hostile/misconfigured VENDOR_API_URL
+  <!-- Security Note: constructor throws on a hostile/misconfigured VENDOR_API_URL
        BEFORE any field is published (no finalizer exposure is possible: the class holds
        no finalize() and Spring never registers it for finalization). Fail-fast beats
        half-constructed service. -->
