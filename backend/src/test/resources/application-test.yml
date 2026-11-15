@@ -1,0 +1,10 @@
+# ATTENTION(resilience): test-profile overrides for deterministic, fast circuit tests.
+resilience4j:
+  circuitbreaker:
+    instances:
+      vendor:
+        wait-duration-in-open-state: 100ms
+  retry:
+    instances:
+      vendor:
+        enable-randomized-wait: false

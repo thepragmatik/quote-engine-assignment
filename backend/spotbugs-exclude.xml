@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter xmlns="https://github.com/spotbugs/filter/3.0.0">
+  <!-- Configuration-properties records are immutable carriers bound by Spring; the Map
+       component is populated by the framework and never mutated. -->
+  <Match>
+    <Class name="com.bendigo.quote.domain.RiskBandMatrix"/>
+    <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+  </Match>
+</FindBugsFilter>

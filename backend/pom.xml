@@ -22,6 +22,28 @@
     <java.version>25</java.version>
   </properties>
 
+  <!-- ATTENTION(config): wiremock-jetty12 3.13.2 is built against Jetty 12.0.x; Boot 4.1.2
+       manages Jetty 12.1.x (incompatible Environment.ensure signature) -> pin the Jetty BOMs
+       WireMock needs. Runtime stays on Tomcat; this only affects the test classpath. -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-bom</artifactId>
+        <version>12.0.30</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-bom</artifactId>
+        <version>12.0.30</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -40,6 +62,12 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-aspectj</artifactId>
     </dependency>
+    <!-- ATTENTION(config): Boot 4 modularized — RestClient.Builder autoconfiguration is no
+         longer pulled in by starter-web; it needs its own starter. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-restclient</artifactId>
+    </dependency>
     <!-- ATTENTION(resilience): Boot-4-native module (2.4.0, 2026-03-14).
          Do NOT use resilience4j-spring-boot3 with Boot 4. -->
     <dependency>
@@ -50,6 +78,14 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- ATTENTION(config): Boot 4 split test autoconfiguration — MockMvc/@WebMvcTest live in
+         spring-boot-starter-webmvc-test (annotations moved to
+         org.springframework.boot.webmvc.test.autoconfigure). -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc-test</artifactId>
       <scope>test</scope>
     </dependency>
     <!-- ATTENTION(design): wiremock-jetty12 avoids the httpclient5 NoSuchMethodError
@@ -74,12 +110,18 @@
             <phase>validate</phase>
           </execution>
         </executions>
-        <configuration><googleJavaFormat/></configuration>
+        <configuration>
+          <googleJavaFormat/>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
-        <version>4.8.6.6</version>
+        <!-- ATTENTION(config): 4.8.6.6 cannot read Java 25 class files (v69); SpotBugs >= 4.9.7 required -->
+        <version>4.10.5.0</version>
+        <configuration>
+          <excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
+        </configuration>
         <executions>
           <execution>
             <goals><goal>check</goal></goals>
