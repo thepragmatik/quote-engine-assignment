@@ -97,7 +97,12 @@ commission matrix, all Resilience4j parameters.
 - **Business rules restored from v1** (input bounds, exact error strings,
   matrix, fault split) because MISSION_v2 dropped them — ADR-005.
 - OWASP dependency-check runs at `verify`; the `-Ddependency-check.skip=true`
-  escape hatch is only used when the NVD is unreachable.
+  escape hatch is only used when the NVD is unreachable. **Status: the recorded
+  full-gate run on 2026-11-15 used the skip** — the NVD API returned HTTP 524
+  (upstream outage) after a 25-minute update attempt; CISA KEV and cached
+  sources did download, but NVD document download failed. SpotBugs and JaCoCo
+  (≥80%) gates passed. Re-run `mvn verify` when the NVD is reachable to complete
+  the gate.
 
 ## AI transparency disclosure
 
