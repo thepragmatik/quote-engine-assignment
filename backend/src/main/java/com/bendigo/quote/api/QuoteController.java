@@ -8,23 +8,48 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST controller orchestrating loan quotation requests.
+ *
+ * <p>Implements the end-to-end workflow outlined in Functional Requirement FR-2:
+ *
+ * <ol>
+ *   <li>Validates the incoming {@link QuoteRequest} payload against boundary constraints.
+ *   <li>Communicates with the external partner vendor API via {@link VendorQuotePort} to obtain
+ *       partner verification.
+ *   <li>Executes financial commission calculation via {@link CommissionCalculationStrategy} using
+ *       Banker's Rounding.
+ *   <li>Returns a structured {@link QuoteResponse} containing the unique quote ID and computed
+ *       monetary values.
+ * </ol>
+ */
 @RestController
 public class QuoteController {
 
-    private final VendorQuotePort vendorPort;
-    private final CommissionCalculationStrategy strategy;
+  private final VendorQuotePort vendorPort;
+  private final CommissionCalculationStrategy strategy;
 
-    public QuoteController(VendorQuotePort vendorPort, CommissionCalculationStrategy strategy) {
-        this.vendorPort = vendorPort;
-        this.strategy = strategy;
-    }
+  public QuoteController(VendorQuotePort vendorPort, CommissionCalculationStrategy strategy) {
+    this.vendorPort = vendorPort;
+    this.strategy = strategy;
+  }
 
-    @PostMapping("/api/v1/quotes")
-    public QuoteResponse createQuote(@Valid @RequestBody QuoteRequest request) {
-        // FR-2 order: vendor verification happens FIRST; the quote is only computed for verified loans.
-        vendorPort.verify(request.loanAmount(), request.loanTermInMonths(), request.riskBand());
-        var quote = strategy.calculate(request.loanAmount(), request.loanTermInMonths(), request.riskBand());
-        return new QuoteResponse(
-                UUID.randomUUID().toString(), quote.commissionRate(), quote.totalCommission());
-    }
+  /**
+   * Calculates and issues a commission quote.
+   *
+   * @param request validated client quote parameters
+   * @return generated quote details with UUID and calculated payout amounts
+   */
+  @PostMapping("/api/v1/quotes")
+  public QuoteResponse createQuote(@Valid @RequestBody QuoteRequest request) {
+    // FR-2 orchestration: vendor verification occurs FIRST; commission is computed only for
+    // verified partners.
+    vendorPort.verify(request.loanAmount(), request.loanTermInMonths(), request.riskBand());
+
+    var quote =
+        strategy.calculate(request.loanAmount(), request.loanTermInMonths(), request.riskBand());
+
+    return new QuoteResponse(
+        UUID.randomUUID().toString(), quote.commissionRate(), quote.totalCommission());
+  }
 }

@@ -111,7 +111,11 @@
           </execution>
         </executions>
         <configuration>
-          <googleJavaFormat/>
+          <java>
+            <googleJavaFormat>
+              <version>1.28.0</version>
+            </googleJavaFormat>
+          </java>
         </configuration>
       </plugin>
       <plugin>

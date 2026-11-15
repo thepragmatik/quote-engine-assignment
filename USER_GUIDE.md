@@ -58,6 +58,16 @@ curl -s -X POST http://localhost:8000/api/v1/quotes -H 'Content-Type: applicatio
 # ends with: E2E: ALL PASS
 ```
 
+## Automated performance load testing
+
+```bash
+# Run 200 concurrent requests across 8 workers against the happy path (p95 < 100ms NFR target)
+./scripts/perf.sh 200 8
+
+# Run soak load testing under 20% stochastic partner failure
+FAULT_RATE=0.2 ./scripts/perf.sh 100 8
+```
+
 ## Tuning the fault engine
 
 ```bash

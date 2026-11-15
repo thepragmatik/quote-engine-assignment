@@ -1,5 +1,9 @@
 package com.bendigo.quote.resilience;
 
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
+import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Duration;
@@ -17,158 +21,185 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import io.github.resilience4j.retry.annotation.Retry;
-import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 
 /**
- * Resilience-decorated adapter for the vendor verification API.
+ * Resilient HTTP client adapter implementing {@link VendorQuotePort} to interact with the
+ * third-party vendor partner.
  *
- * <p>ATTENTION(resilience): two composed methods keep the aspect nesting correct. The default
- * aspect order is Bulkhead -> TimeLimiter -> RateLimiter -> CircuitBreaker -> Retry (innermost
- * last), so the CircuitBreaker wraps the WHOLE retry chain: it records ONE logical call per
- * request and its fallback sees exhausted retries and CB rejections alike. The fallback signature
- * is deliberately NARROWED to CallNotPermittedException — a wider Throwable would also swallow
- * exhausted-retry exceptions and wrongly answer 503 instead of 502.
+ * <p><b>Resilience4j Decorator Composition & Aspect Ordering:</b> <br>
+ * The default Resilience4j Spring aspect precedence is:
+ *
+ * <pre>
+ *   Bulkhead -&gt; TimeLimiter -&gt; RateLimiter -&gt; CircuitBreaker -&gt; Retry
+ * </pre>
+ *
+ * Since {@link CircuitBreaker} sits <i>outside</i> {@link Retry}, two methods are composed to
+ * ensure exact behavioral semantics matching the system specification:
+ *
+ * <ol>
+ *   <li>{@link #callVendorOnce(BigDecimal, int, String)} is decorated with {@link TimeLimiter}.
+ *       This enforces the 2000ms deadline against <i>each individual call attempt</i> rather than
+ *       the aggregated duration of all retries.
+ *   <li>{@link #verify(BigDecimal, int, String)} coordinates execution under {@link Retry} and
+ *       {@link CircuitBreaker}. The CircuitBreaker records exactly one logical call per incoming
+ *       client request.
+ *   <li>The circuit breaker fallback ({@code circuitFallback}) signature is strictly narrowed to
+ *       {@link CallNotPermittedException}. This prevents the fallback from accidentally
+ *       intercepting exhausted retry exceptions (which must map cleanly to HTTP 502 rather than
+ *       HTTP 503).
+ * </ol>
+ *
+ * <p><b>Underlying Socket Timeout Protection:</b> In addition to the Resilience4j {@link
+ * TimeLimiter}, the underlying {@link RestClient} is configured with physical connect (1s) and read
+ * (2s) timeouts. This prevents orphan thread and socket leaks when a timed-out {@link
+ * CompletableFuture} is abandoned.
  */
 @Component
 public class VendorApiClientAdapter implements VendorQuotePort {
 
-    private static final String VERIFY_PATH = "/api/v1/vendor/quotes";
+  private static final String VERIFY_PATH = "/api/v1/vendor/quotes";
 
-    private final RestClient restClient;
-    private final ObjectProvider<VendorApiClientAdapter> selfProvider;
+  private final RestClient restClient;
+  private final ObjectProvider<VendorApiClientAdapter> selfProvider;
 
-    public VendorApiClientAdapter(
-            RestClient.Builder restClientBuilder,
-            @Value("${vendor.api-url}") String apiUrl,
-            @Value("${vendor.api-key}") String apiKey,
-            ObjectProvider<VendorApiClientAdapter> selfProvider) {
-        // ATTENTION(security): fail fast on a hostile/misconfigured VENDOR_API_URL —
-        // this is where the API key would be sent. Only http/https with a host is accepted.
-        validateApiUrl(apiUrl);
-        this.restClient =
-                restClientBuilder
-                        .baseUrl(apiUrl)
-                        .defaultHeader("x-api-key", apiKey)
-                        // ATTENTION(resilience): bound the RAW HTTP call so a timed-out
-                        // TimeLimiter future does not leave zombie socket calls running —
-                        // read timeout matches the 2s TimeLimiter; connect is 1s.
-                        .requestFactory(httpRequestFactory())
-                        .build();
-        this.selfProvider = selfProvider;
+  public VendorApiClientAdapter(
+      RestClient.Builder restClientBuilder,
+      @Value("${vendor.api-url}") String apiUrl,
+      @Value("${vendor.api-key}") String apiKey,
+      ObjectProvider<VendorApiClientAdapter> selfProvider) {
+    // ATTENTION(security): fail fast on a hostile or misconfigured VENDOR_API_URL.
+    // Verifies scheme and host upfront to safeguard against SSRF or unencrypted credential egress.
+    validateApiUrl(apiUrl);
+
+    this.restClient =
+        restClientBuilder
+            .baseUrl(apiUrl)
+            .defaultHeader("x-api-key", apiKey)
+            // ATTENTION(resilience): enforce physical socket timeouts matching the TimeLimiter
+            .requestFactory(httpRequestFactory())
+            .build();
+    this.selfProvider = selfProvider;
+  }
+
+  private static SimpleClientHttpRequestFactory httpRequestFactory() {
+    SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+    factory.setConnectTimeout(Duration.ofSeconds(1));
+    factory.setReadTimeout(Duration.ofSeconds(2));
+    return factory;
+  }
+
+  private static void validateApiUrl(String apiUrl) {
+    try {
+      URI uri = URI.create(apiUrl);
+      String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase();
+      if (!Set.of("http", "https").contains(scheme)
+          || uri.getHost() == null
+          || uri.getHost().isBlank()) {
+        throw new IllegalArgumentException("Invalid vendor.api-url: " + apiUrl);
+      }
+    } catch (IllegalArgumentException e) {
+      throw new IllegalStateException(
+          "Invalid vendor.api-url (must be absolute http/https URL): " + apiUrl, e);
     }
+  }
 
-    private static SimpleClientHttpRequestFactory httpRequestFactory() {
-        SimpleClientHttpRequestFactory f = new SimpleClientHttpRequestFactory();
-        f.setConnectTimeout(Duration.ofSeconds(1));
-        f.setReadTimeout(Duration.ofSeconds(2));
-        return f;
+  @Override
+  @Retry(name = "vendor")
+  @CircuitBreaker(name = "vendor", fallbackMethod = "circuitFallback")
+  public VendorVerification verify(BigDecimal loanAmount, int termMonths, String riskBand) {
+    try {
+      // ATTENTION(resilience): dispatch through the AOP proxy provider so @TimeLimiter fires
+      return selfProvider.getObject().callVendorOnce(loanAmount, termMonths, riskBand).join();
+    } catch (CompletionException e) {
+      Throwable cause = e.getCause() == null ? e : e.getCause();
+      if (cause instanceof RetryableVendorException retryable) {
+        throw retryable;
+      }
+      if (cause instanceof VendorServiceUnavailableException unavailable) {
+        throw unavailable;
+      }
+      // ATTENTION(resilience): the raw HTTP call now has its own read timeout (2s),
+      // so a slow vendor can surface here as ResourceAccessException/IOException
+      // racing the TimeLimiter — map it to the retryable path either way.
+      if (cause instanceof java.io.IOException
+          || cause instanceof org.springframework.web.client.ResourceAccessException) {
+        throw new RetryableVendorException("Vendor call timed out or network failure", cause);
+      }
+      if (cause instanceof TimeoutException) {
+        throw new RetryableVendorException("Vendor call timed out", cause);
+      }
+      throw new IllegalStateException("Unexpected vendor call failure", cause);
     }
+  }
 
-    private static void validateApiUrl(String apiUrl) {
-        try {
-            URI uri = URI.create(apiUrl);
-            String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase();
-            if (!Set.of("http", "https").contains(scheme) || uri.getHost() == null || uri.getHost().isBlank()) {
-                throw new IllegalArgumentException("Invalid vendor.api-url: " + apiUrl);
-            }
-        } catch (IllegalArgumentException e) {
-            throw new IllegalStateException("Invalid vendor.api-url (must be absolute http/https URL): " + apiUrl, e);
-        }
-    }
+  /**
+   * Executes a single asynchronous HTTP call attempt to the vendor, bounded by the {@link
+   * TimeLimiter}.
+   */
+  @TimeLimiter(name = "vendor")
+  public CompletableFuture<VendorVerification> callVendorOnce(
+      BigDecimal loanAmount, int termMonths, String riskBand) {
+    return CompletableFuture.supplyAsync(() -> postVendorQuote(loanAmount, termMonths, riskBand));
+  }
 
-    @Override
-    @Retry(name = "vendor")
-    @CircuitBreaker(name = "vendor", fallbackMethod = "circuitFallback")
-    public VendorVerification verify(BigDecimal loanAmount, int termMonths, String riskBand) {
-        try {
-            // ATTENTION(resilience): call through the AOP proxy so the @TimeLimiter aspect fires;
-            // a plain this.callVendorOnce(...) self-invocation would bypass it.
-            return selfProvider.getObject().callVendorOnce(loanAmount, termMonths, riskBand).join();
-        } catch (CompletionException e) {
-            Throwable cause = e.getCause() == null ? e : e.getCause();
-            if (cause instanceof RetryableVendorException retryable) {
-                throw retryable;
-            }
-            if (cause instanceof VendorServiceUnavailableException unavailable) {
-                throw unavailable;
-            }
-            // ATTENTION(resilience): the raw HTTP call now has its own read timeout (2s),
-            // so a slow vendor can surface here as ResourceAccessException/IOException
-            // racing the TimeLimiter — map it to the retryable path either way.
-            if (cause instanceof java.io.IOException
-                    || cause instanceof org.springframework.web.client.ResourceAccessException) {
-                throw new RetryableVendorException("Vendor call timed out or network failure", cause);
-            }
-            if (cause instanceof TimeoutException) {
-                throw new RetryableVendorException("Vendor call timed out", cause);
-            }
-            throw new IllegalStateException("Unexpected vendor call failure", cause);
-        }
-    }
+  /**
+   * Fallback invoked strictly when the CircuitBreaker is in the OPEN state.
+   *
+   * <p>ATTENTION(resilience): The signature narrows the parameter to {@link
+   * CallNotPermittedException} so that exhausted retries or network errors bubbling up from {@link
+   * #verify} are not caught here.
+   */
+  private VendorVerification circuitFallback(
+      BigDecimal loanAmount, int termMonths, String riskBand, CallNotPermittedException ex) {
+    throw new CircuitOpenException("Vendor circuit is open");
+  }
 
-    // ATTENTION(resilience): the TimeLimiter bounds ONE raw HTTP attempt (2s), not the retry chain.
-    // Runs the blocking call on a worker thread so the limiter can time out the future.
-    @TimeLimiter(name = "vendor")
-    public CompletableFuture<VendorVerification> callVendorOnce(
-            BigDecimal loanAmount, int termMonths, String riskBand) {
-        return CompletableFuture.supplyAsync(() -> postVendorQuote(loanAmount, termMonths, riskBand));
+  private VendorVerification postVendorQuote(
+      BigDecimal loanAmount, int termMonths, String riskBand) {
+    try {
+      VendorVerification verification =
+          restClient
+              .post()
+              .uri(VERIFY_PATH)
+              .contentType(MediaType.APPLICATION_JSON)
+              .body(
+                  Map.of(
+                      "loanAmount",
+                      loanAmount,
+                      "loanTermInMonths",
+                      termMonths,
+                      "riskBand",
+                      riskBand))
+              .retrieve()
+              .body(VendorVerification.class);
+      if (verification == null || !verification.verified()) {
+        throw new VendorServiceUnavailableException("Vendor could not verify the quote");
+      }
+      return verification;
+    } catch (HttpStatusCodeException e) {
+      int status = e.getStatusCode().value();
+      if (status == 500 || status == 504) {
+        throw new RetryableVendorException("Vendor transient failure: HTTP " + status, e);
+      }
+      throw new VendorServiceUnavailableException("Vendor rejected the request: HTTP " + status, e);
+    } catch (ResourceAccessException e) {
+      throw new RetryableVendorException("Vendor network failure", e);
+    } catch (RestClientException e) {
+      // ATTENTION(resilience): RestClient wraps raw socket/connect timeouts in a plain
+      // RestClientException (not a ResourceAccessException) — classify by root cause.
+      if (rootCauseIsTransientIo(e)) {
+        throw new RetryableVendorException("Vendor call timed out or connection failure", e);
+      }
+      throw new VendorServiceUnavailableException("Vendor call failed", e);
     }
+  }
 
-    // ATTENTION(resilience): narrowed fallback — only CB-rejected calls land here and become 503;
-    // exhausted retries propagate as RetryableVendorException and are mapped to 502.
-    private VendorVerification circuitFallback(
-            BigDecimal loanAmount, int termMonths, String riskBand, CallNotPermittedException ex) {
-        throw new CircuitOpenException("Vendor circuit is open");
+  private static boolean rootCauseIsTransientIo(Throwable e) {
+    for (Throwable t = e; t != null; t = t.getCause()) {
+      if (t instanceof java.net.SocketTimeoutException || t instanceof java.net.ConnectException) {
+        return true;
+      }
     }
-
-    private VendorVerification postVendorQuote(BigDecimal loanAmount, int termMonths, String riskBand) {
-        try {
-            VendorVerification verification =
-                    restClient
-                            .post()
-                            .uri(VERIFY_PATH)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .body(
-                                    Map.of(
-                                            "loanAmount",
-                                            loanAmount,
-                                            "loanTermInMonths",
-                                            termMonths,
-                                            "riskBand",
-                                            riskBand))
-                            .retrieve()
-                            .body(VendorVerification.class);
-            if (verification == null || !verification.verified()) {
-                throw new VendorServiceUnavailableException("Vendor could not verify the quote");
-            }
-            return verification;
-        } catch (HttpStatusCodeException e) {
-            int status = e.getStatusCode().value();
-            if (status == 500 || status == 504) {
-                throw new RetryableVendorException("Vendor transient failure: HTTP " + status, e);
-            }
-            throw new VendorServiceUnavailableException("Vendor rejected the request: HTTP " + status, e);
-        } catch (ResourceAccessException e) {
-            throw new RetryableVendorException("Vendor network failure", e);
-        } catch (RestClientException e) {
-            // ATTENTION(resilience): RestClient wraps raw socket/connect timeouts in a plain
-            // RestClientException (not a ResourceAccessException) — classify by root cause.
-            if (rootCauseIsTransientIo(e)) {
-                throw new RetryableVendorException("Vendor call timed out or connection failure", e);
-            }
-            throw new VendorServiceUnavailableException("Vendor call failed", e);
-        }
-    }
-
-    private static boolean rootCauseIsTransientIo(Throwable e) {
-        for (Throwable t = e; t != null; t = t.getCause()) {
-            if (t instanceof java.net.SocketTimeoutException || t instanceof java.net.ConnectException) {
-                return true;
-            }
-        }
-        return false;
-    }
+    return false;
+  }
 }

@@ -14,4 +14,8 @@
     <Class name="com.bendigo.quote.resilience.VendorApiClientAdapter"/>
     <Bug pattern="CT_CONSTRUCTOR_THROW"/>
   </Match>
+  <Match>
+    <Class name="com.bendigo.quote.domain.MatrixCommissionStrategy"/>
+    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+  </Match>
 </FindBugsFilter>
