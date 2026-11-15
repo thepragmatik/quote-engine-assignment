@@ -88,9 +88,36 @@ commission matrix, all Resilience4j parameters.
 
 ## Performance (NFR)
 
-Happy-path latency spot-check (2026-11-15, `FAULT_RATE=0`, 20 samples after 3
-warmup, full stack in Docker): **p95 = 6.6 ms** (min 4.5 ms, median 5.0 ms,
-max 9.4 ms) — well within the spec's <100 ms p95 budget.
+Automated: `scripts/perf.sh [requests] [concurrency]` (defaults 200/8) — asserts
+the p95 < 100 ms NFR.
+
+- **Happy path** (`FAULT_RATE=0`, 200 req / concurrency 8, full Docker stack):
+  **p50 = 5.3 ms, p95 = 8.0 ms, p99 = 10.1 ms**, 200/200 success — ~12× headroom
+  on the NFR.
+- **Fault soak** (`FAULT_RATE=0.2`, 100 req / concurrency 8): 91×200 + 9×502
+  (retries recover most transient faults), **p95 = 1310 ms, p99 = 1903 ms** —
+  degraded path is bounded by design (3 attempts × 2s + backoff ≈ 7.5 s worst
+  case) and zero hangs.
+- Earlier one-off spot check (20 samples): p95 = 6.6 ms.
+
+## Adversarial checks (2026-11-15)
+
+39-probe battery against the live stack (numeric coercion: negative/zero/NaN/
+scientific/huge-scale/string/bool; structural: unknown fields, duplicate JSON
+keys, malformed JSON, deep nesting, 5k-char and 2 MB strings, prototype keys;
+auth: missing/wrong/empty/space-padded/case-suffixed `x-api-key`; transport:
+wrong/missing content-type, GET on POST route, path traversal, spoofed
+`X-Forwarded-*` through the nginx proxy):
+
+- **Zero server-side 500s, zero stack-trace or internal-detail leaks** across
+  all probes.
+- All malformed/tampered payloads rejected with 400 `{"detail": ...}`;
+  oversized (2 MB) bodies rejected; `415` for wrong content-type.
+- Actuator exposure limited to `health` (`/actuator/env` → 404).
+- Known nits (accepted, documented): a space-padded `x-api-key` is accepted by
+  the mock vendor (HTTP header trimming semantics; the backend always sends a
+  clean key); `415` responses use Spring's default error body rather than the
+  `{"detail": ...}` contract.
 
 ## Honest deviations & disclosures
 
