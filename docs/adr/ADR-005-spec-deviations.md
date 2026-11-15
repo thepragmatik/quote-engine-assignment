@@ -28,3 +28,20 @@ v1 rules; per direction, v1 business rules were restored. All deviations:
 7. **Fault engine split made explicit**: FAULT_RATE is a fraction; at 0.2 →
    80% ok / 10% 500 / 5% 400 / 5% latency-504 (v2 names the fault codes but not
    the split; v1's 80/10/10 predates the 400 requirement).
+8. **Circuit-breaker accounting** (post-review clarification): with
+   CircuitBreaker OUTSIDE Retry (ADR-002), the breaker records ONE logical call
+   per request; combined with `minimum-number-of-calls: 5` the circuit trips at
+   5 failed logical requests (= 15 vendor HTTP attempts), not "5 failures
+   within 10 vendor calls". Non-transient faults (400/401) additionally do not
+   count toward the breaker (`ignore-exceptions`).
+9. **Latency injection applies to the LATENCY_504 branch only** — OK/400/500
+   responses return immediately. Reading of v2 FR-4; a status-independent
+   latency draw would be a one-line change in `QuoteController`.
+10. **Loan bounds are compile-time constants** (bean-validation limitation) —
+   see ADR-006.
+11. **Spotless is bound as `check`** (fails the build on violations), applied
+    once with `spotless:apply` before switching — spec §8 enforcement semantics.
+12. **Docker image builds run the full test+gates suite**
+    (`mvn verify -Ddependency-check.skip=true`) so shipped images cannot
+    bypass quality; OWASP runs at host `mvn verify` (NVD is not reliable inside
+    a build container).
