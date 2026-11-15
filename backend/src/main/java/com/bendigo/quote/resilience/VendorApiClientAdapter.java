@@ -1,17 +1,22 @@
 package com.bendigo.quote.resilience;
 
 import java.math.BigDecimal;
+import java.net.URI;
+import java.time.Duration;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeoutException;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
@@ -40,12 +45,38 @@ public class VendorApiClientAdapter implements VendorQuotePort {
             @Value("${vendor.api-url}") String apiUrl,
             @Value("${vendor.api-key}") String apiKey,
             ObjectProvider<VendorApiClientAdapter> selfProvider) {
+        // ATTENTION(security): fail fast on a hostile/misconfigured VENDOR_API_URL —
+        // this is where the API key would be sent. Only http/https with a host is accepted.
+        validateApiUrl(apiUrl);
         this.restClient =
                 restClientBuilder
                         .baseUrl(apiUrl)
                         .defaultHeader("x-api-key", apiKey)
+                        // ATTENTION(resilience): bound the RAW HTTP call so a timed-out
+                        // TimeLimiter future does not leave zombie socket calls running —
+                        // read timeout matches the 2s TimeLimiter; connect is 1s.
+                        .requestFactory(httpRequestFactory())
                         .build();
         this.selfProvider = selfProvider;
+    }
+
+    private static SimpleClientHttpRequestFactory httpRequestFactory() {
+        SimpleClientHttpRequestFactory f = new SimpleClientHttpRequestFactory();
+        f.setConnectTimeout(Duration.ofSeconds(1));
+        f.setReadTimeout(Duration.ofSeconds(2));
+        return f;
+    }
+
+    private static void validateApiUrl(String apiUrl) {
+        try {
+            URI uri = URI.create(apiUrl);
+            String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase();
+            if (!Set.of("http", "https").contains(scheme) || uri.getHost() == null || uri.getHost().isBlank()) {
+                throw new IllegalArgumentException("Invalid vendor.api-url: " + apiUrl);
+            }
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("Invalid vendor.api-url (must be absolute http/https URL): " + apiUrl, e);
+        }
     }
 
     @Override
@@ -63,6 +94,13 @@ public class VendorApiClientAdapter implements VendorQuotePort {
             }
             if (cause instanceof VendorServiceUnavailableException unavailable) {
                 throw unavailable;
+            }
+            // ATTENTION(resilience): the raw HTTP call now has its own read timeout (2s),
+            // so a slow vendor can surface here as ResourceAccessException/IOException
+            // racing the TimeLimiter — map it to the retryable path either way.
+            if (cause instanceof java.io.IOException
+                    || cause instanceof org.springframework.web.client.ResourceAccessException) {
+                throw new RetryableVendorException("Vendor call timed out or network failure", cause);
             }
             if (cause instanceof TimeoutException) {
                 throw new RetryableVendorException("Vendor call timed out", cause);
@@ -115,6 +153,22 @@ public class VendorApiClientAdapter implements VendorQuotePort {
             throw new VendorServiceUnavailableException("Vendor rejected the request: HTTP " + status, e);
         } catch (ResourceAccessException e) {
             throw new RetryableVendorException("Vendor network failure", e);
+        } catch (RestClientException e) {
+            // ATTENTION(resilience): RestClient wraps raw socket/connect timeouts in a plain
+            // RestClientException (not a ResourceAccessException) — classify by root cause.
+            if (rootCauseIsTransientIo(e)) {
+                throw new RetryableVendorException("Vendor call timed out or connection failure", e);
+            }
+            throw new VendorServiceUnavailableException("Vendor call failed", e);
         }
+    }
+
+    private static boolean rootCauseIsTransientIo(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof java.net.SocketTimeoutException || t instanceof java.net.ConnectException) {
+                return true;
+            }
+        }
+        return false;
     }
 }
