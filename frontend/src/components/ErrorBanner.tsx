@@ -3,6 +3,10 @@ import { useEffect, useRef, useState } from 'react'
 interface Props {
   message: string
   circuitOpen: boolean
+  /** Monotonic attempt sequence from the form — re-arms the debounce even when
+   * two consecutive errors carry the SAME message (a [message]-only dep would
+   * leave the retry button permanently enabled after a repeat failure). */
+  attempt: number
   onRetry: () => void
 }
 
@@ -10,7 +14,7 @@ interface Props {
 // failures; Retry CTA debounced 2s so a frustrated user cannot hammer the API.
 const RETRY_DEBOUNCE_MS = 2000
 
-export default function ErrorBanner({ message, circuitOpen, onRetry }: Props) {
+export default function ErrorBanner({ message, circuitOpen, attempt, onRetry }: Props) {
   const [retryDisabled, setRetryDisabled] = useState(true)
   const timer = useRef<number | undefined>(undefined)
 
@@ -18,7 +22,7 @@ export default function ErrorBanner({ message, circuitOpen, onRetry }: Props) {
     setRetryDisabled(true)
     timer.current = window.setTimeout(() => setRetryDisabled(false), RETRY_DEBOUNCE_MS)
     return () => window.clearTimeout(timer.current)
-  }, [message])
+  }, [message, attempt]) // attempt re-arms the debounce on identical consecutive errors
 
   return (
     <div role="alert"

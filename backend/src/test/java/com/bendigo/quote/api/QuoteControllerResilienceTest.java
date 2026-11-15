@@ -38,7 +38,7 @@ class QuoteControllerResilienceTest {
             "{\"loanAmount\":250000.00,\"loanTermInMonths\":36,\"riskBand\":\"MEDIUM\"}";
     private static final String VENDOR_OK_BODY = "{\"verificationCode\":\"VC-abc\",\"verified\":true}";
 
-    static WireMockServer wm = new WireMockServer(WireMockConfiguration.options().port(8001));
+    static WireMockServer wm = new WireMockServer(WireMockConfiguration.options().dynamicPort());
 
     @Autowired MockMvc mockMvc;
 
@@ -46,7 +46,7 @@ class QuoteControllerResilienceTest {
 
     @DynamicPropertySource
     static void vendorProps(DynamicPropertyRegistry registry) {
-        registry.add("vendor.api-url", () -> "http://localhost:8001");
+        registry.add("vendor.api-url", () -> wm.baseUrl());
     }
 
     @BeforeAll

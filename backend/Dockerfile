@@ -6,7 +6,11 @@ COPY pom.xml .
 COPY spotbugs-exclude.xml* ./
 RUN mvn -q dependency:go-offline
 COPY src ./src
-RUN mvn -q package -DskipTests
+# ATTENTION(design): run the full gate suite (unit+integration tests, SpotBugs,
+# JaCoCo 80%) INSIDE the image build so shipped images cannot bypass quality —
+# OWASP stays skipped here: the NVD download inside a build container is neither
+# cacheable nor reliable; it runs at host `mvn verify` (see README disclosures).
+RUN mvn -q verify -Ddependency-check.skip=true
 
 FROM eclipse-temurin:25-jre-alpine
 # ATTENTION(security): non-root UID 10001 per MISSION_v2 §6

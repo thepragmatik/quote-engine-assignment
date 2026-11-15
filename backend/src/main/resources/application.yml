@@ -27,6 +27,11 @@ resilience4j:
         slow-call-rate-threshold: 50
         slow-call-duration-threshold: 1500ms
         wait-duration-in-open-state: 10s
+        # ATTENTION(resilience): non-transient faults (vendor 400/401) must NOT trip the
+        # breaker — a bad API key is a permanent misconfiguration, not an outage; without
+        # this the circuit would OPEN and clients would see 503 for an auth problem.
+        ignore-exceptions:
+          - com.bendigo.quote.resilience.VendorServiceUnavailableException
   # ATTENTION(resilience): 3 attempts with exponential backoff + jitter; retries ONLY on
   # transient faults (500/504-mapped exceptions and raw IOExceptions) — 400/401 fail fast.
   retry:

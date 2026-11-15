@@ -106,7 +106,7 @@
         <version>2.44.2</version>
         <executions>
           <execution>
-            <goals><goal>apply</goal></goals>
+            <goals><goal>check</goal></goals>
             <phase>validate</phase>
           </execution>
         </executions>

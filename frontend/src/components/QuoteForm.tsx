@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { quoteSchema, type QuotePayload } from '../api/quoteSchema'
 import { requestQuote, QuoteHttpError, type QuoteResult } from '../api/quote'
 import ErrorBanner from './ErrorBanner'
@@ -13,10 +13,11 @@ export default function QuoteForm() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<QuoteResult | null>(null)
-  const [banner, setBanner] = useState<{ message: string; circuitOpen: boolean } | null>(null)
+  const [banner, setBanner] = useState<{ message: string; circuitOpen: boolean; attempt: number } | null>(null)
+  const attemptSeqRef = useRef(0)
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault()
+  const submit = async (e?: React.FormEvent) => {
+    e?.preventDefault()
     if (submitting) return // ATTENTION(design): double-submit guard
     const parsed = quoteSchema.safeParse({
       loanAmount: Number(loanAmount),
@@ -41,9 +42,9 @@ export default function QuoteForm() {
     } catch (err) {
       setResult(null)
       if (err instanceof QuoteHttpError) {
-        setBanner({ message: err.detail, circuitOpen: err.state === 'CIRCUIT_OPEN' })
+        setBanner({ message: err.detail, circuitOpen: err.state === 'CIRCUIT_OPEN', attempt: ++attemptSeqRef.current })
       } else {
-        setBanner({ message: 'Request failed. Please try again.', circuitOpen: false })
+        setBanner({ message: 'Request failed. Please try again.', circuitOpen: false, attempt: ++attemptSeqRef.current })
       }
     } finally {
       setSubmitting(false)
@@ -84,10 +85,11 @@ export default function QuoteForm() {
         </fieldset>
         <button type="submit" disabled={submitting}
           className="w-full rounded bg-blue-600 px-4 py-2 font-medium text-white disabled:bg-blue-300">
+          {submitting && <span aria-hidden="true" className="mr-2 inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />}
           {submitting ? 'Calculating…' : 'Calculate Quote'}
         </button>
       </form>
-      {banner && <ErrorBanner message={banner.message} circuitOpen={banner.circuitOpen} onRetry={() => { void submit(new Event('retry') as unknown as React.FormEvent) }} />}
+      {banner && <ErrorBanner message={banner.message} circuitOpen={banner.circuitOpen} attempt={banner.attempt} onRetry={() => { void submit() }} />}
       {result && <ResultCard result={result} />}
     </div>
   )
