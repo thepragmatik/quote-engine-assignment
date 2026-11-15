@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bendigo.quote.resilience.VendorQuotePort;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
@@ -37,7 +38,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @DisplayName("QuoteControllerHappyPathTest — End-to-End Orchestration & Transient Recovery")
 class QuoteControllerHappyPathTest {
 
-  private static final String PATH = "/api/v1/vendor/quotes";
+  private static final String PATH = VendorQuotePort.VERIFY_PATH;
   private static final String VALID_REQUEST =
       "{\"loanAmount\":250000.00,\"loanTermInMonths\":36,\"riskBand\":\"MEDIUM\"}";
 

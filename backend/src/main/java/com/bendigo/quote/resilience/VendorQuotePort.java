@@ -11,6 +11,9 @@ import java.math.BigDecimal;
  */
 public interface VendorQuotePort {
 
+  /** Canonical API endpoint path for the partner quote verification service. */
+  String VERIFY_PATH = "/api/v1/vendor/quotes";
+
   /**
    * Verifies partner eligibility and obtains a verification code for the given quote parameters.
    *

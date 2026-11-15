@@ -26,16 +26,33 @@ import java.math.BigDecimal;
     ignoreUnknown =
         false) // ATTENTION(security): sanitization control — unknown fields are rejected
 public record QuoteRequest(
-    @NotNull(message = "Loan amount is required.")
-        @DecimalMin(value = "1000", message = "Loan amount must be between $1,000 and $10,000,000.")
-        @DecimalMax(
-            value = "10000000",
-            message = "Loan amount must be between $1,000 and $10,000,000.")
+    @NotNull(message = LOAN_AMOUNT_REQUIRED_MSG)
+        @DecimalMin(value = MIN_LOAN_AMOUNT_STR, message = LOAN_AMOUNT_RANGE_MSG)
+        @DecimalMax(value = MAX_LOAN_AMOUNT_STR, message = LOAN_AMOUNT_RANGE_MSG)
         BigDecimal loanAmount,
-    @NotNull(message = "Loan term is required.")
-        @Min(value = 6, message = "Loan term must be between 6 and 360 months.")
-        @Max(value = 360, message = "Loan term must be between 6 and 360 months.")
+    @NotNull(message = LOAN_TERM_REQUIRED_MSG)
+        @Min(value = MIN_LOAN_TERM_MONTHS, message = LOAN_TERM_RANGE_MSG)
+        @Max(value = MAX_LOAN_TERM_MONTHS, message = LOAN_TERM_RANGE_MSG)
         Integer loanTermInMonths,
-    @NotNull(message = "Please select a valid risk band.")
-        @Pattern(regexp = "LOW|MEDIUM|HIGH", message = "Please select a valid risk band.")
-        String riskBand) {}
+    @NotNull(message = RISK_BAND_MSG) @Pattern(regexp = RISK_BANDS_PATTERN, message = RISK_BAND_MSG)
+        String riskBand) {
+
+  // Boundary value constants — single source of truth for backend validation limits
+  public static final String MIN_LOAN_AMOUNT_STR = "1000";
+  public static final String MAX_LOAN_AMOUNT_STR = "10000000";
+  public static final long MIN_LOAN_AMOUNT = 1000L;
+  public static final long MAX_LOAN_AMOUNT = 10000000L;
+
+  public static final int MIN_LOAN_TERM_MONTHS = 6;
+  public static final int MAX_LOAN_TERM_MONTHS = 360;
+
+  public static final String RISK_BANDS_PATTERN = "LOW|MEDIUM|HIGH";
+
+  // Contractual validation error messages (Functional Requirement FR-1)
+  public static final String LOAN_AMOUNT_REQUIRED_MSG = "Loan amount is required.";
+  public static final String LOAN_AMOUNT_RANGE_MSG =
+      "Loan amount must be between $1,000 and $10,000,000.";
+  public static final String LOAN_TERM_REQUIRED_MSG = "Loan term is required.";
+  public static final String LOAN_TERM_RANGE_MSG = "Loan term must be between 6 and 360 months.";
+  public static final String RISK_BAND_MSG = "Please select a valid risk band.";
+}

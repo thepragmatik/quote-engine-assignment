@@ -2,12 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, act, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from '../App'
-
-// ATTENTION(test): these tests assert the FR-1 contract strings LITERALLY —
-// they are strict functional requirements, not arbitrary cosmetic copy.
-const AMOUNT_ERR = 'Loan amount must be between $1,000 and $10,000,000.'
-const TERM_ERR = 'Loan term must be between 6 and 360 months.'
-const BAND_ERR = 'Please select a valid risk band.'
+import {
+  LOAN_AMOUNT_ERROR as AMOUNT_ERR,
+  LOAN_TERM_ERROR as TERM_ERR,
+  RISK_BAND_ERROR as BAND_ERR,
+} from '../api/quoteSchema'
 
 async function fillValid(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText(/loan amount/i), '250000')

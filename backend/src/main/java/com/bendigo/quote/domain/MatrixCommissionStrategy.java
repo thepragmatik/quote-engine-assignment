@@ -1,5 +1,6 @@
 package com.bendigo.quote.domain;
 
+import com.bendigo.quote.api.QuoteRequest;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Map;
@@ -24,8 +25,14 @@ import java.util.Map;
  */
 public final class MatrixCommissionStrategy implements CommissionCalculationStrategy {
 
-  private static final BigDecimal TWELVE = BigDecimal.valueOf(12);
-  private static final int YEARS_SCALE = 10;
+  /** Divisor representing the number of months in a calendar year. */
+  private static final BigDecimal MONTHS_PER_YEAR = BigDecimal.valueOf(12);
+
+  /**
+   * Intermediate scale for arbitrary precision tenure division to prevent non-terminating expansion
+   * errors.
+   */
+  private static final int YEARS_DIVISION_SCALE = 10;
 
   private final Map<String, RiskBandMatrix.RateSpec> matrix;
 
@@ -44,19 +51,21 @@ public final class MatrixCommissionStrategy implements CommissionCalculationStra
   @Override
   public Quote calculate(BigDecimal loanAmount, int termMonths, String riskBand) {
     if (loanAmount == null) {
-      throw new InvalidLoanParameterException("Loan amount must not be null.");
+      throw new InvalidLoanParameterException(QuoteRequest.LOAN_AMOUNT_REQUIRED_MSG);
     }
     if (riskBand == null || riskBand.isBlank()) {
-      throw new InvalidLoanParameterException("Please select a valid risk band.");
+      throw new InvalidLoanParameterException(QuoteRequest.RISK_BAND_MSG);
     }
     var spec = matrix.get(riskBand);
     if (spec == null) {
-      throw new InvalidLoanParameterException("Please select a valid risk band.");
+      throw new InvalidLoanParameterException(QuoteRequest.RISK_BAND_MSG);
     }
 
     // ATTENTION(money): plain divide() throws ArithmeticException for non-terminating quotients
     // (e.g. 8/12 = 2/3); use an explicit intermediate scale of 10 decimal places.
-    var years = BigDecimal.valueOf(termMonths).divide(TWELVE, YEARS_SCALE, RoundingMode.HALF_EVEN);
+    var years =
+        BigDecimal.valueOf(termMonths)
+            .divide(MONTHS_PER_YEAR, YEARS_DIVISION_SCALE, RoundingMode.HALF_EVEN);
 
     // ATTENTION(money): rate is quantized to 4dp BEFORE multiplying by the amount (frozen rule).
     var unscaledRate = spec.baseRate().add(spec.termMultiplier().multiply(years));

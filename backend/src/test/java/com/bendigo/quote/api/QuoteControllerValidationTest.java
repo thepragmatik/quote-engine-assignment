@@ -45,8 +45,7 @@ class QuoteControllerValidationTest {
                   .content(
                       "{\"loanAmount\":999.99,\"loanTermInMonths\":36,\"riskBand\":\"MEDIUM\"}"))
           .andExpect(status().isBadRequest())
-          .andExpect(
-              jsonPath("$.detail").value("Loan amount must be between $1,000 and $10,000,000."));
+          .andExpect(jsonPath("$.detail").value(QuoteRequest.LOAN_AMOUNT_RANGE_MSG));
     }
 
     @Test
@@ -59,8 +58,7 @@ class QuoteControllerValidationTest {
                   .content(
                       "{\"loanAmount\":10000000.01,\"loanTermInMonths\":36,\"riskBand\":\"MEDIUM\"}"))
           .andExpect(status().isBadRequest())
-          .andExpect(
-              jsonPath("$.detail").value("Loan amount must be between $1,000 and $10,000,000."));
+          .andExpect(jsonPath("$.detail").value(QuoteRequest.LOAN_AMOUNT_RANGE_MSG));
     }
 
     @Test
@@ -90,7 +88,7 @@ class QuoteControllerValidationTest {
                   .content(
                       "{\"loanAmount\":250000.00,\"loanTermInMonths\":5,\"riskBand\":\"MEDIUM\"}"))
           .andExpect(status().isBadRequest())
-          .andExpect(jsonPath("$.detail").value("Loan term must be between 6 and 360 months."));
+          .andExpect(jsonPath("$.detail").value(QuoteRequest.LOAN_TERM_RANGE_MSG));
     }
 
     @Test
@@ -103,7 +101,7 @@ class QuoteControllerValidationTest {
                   .content(
                       "{\"loanAmount\":250000.00,\"loanTermInMonths\":361,\"riskBand\":\"MEDIUM\"}"))
           .andExpect(status().isBadRequest())
-          .andExpect(jsonPath("$.detail").value("Loan term must be between 6 and 360 months."));
+          .andExpect(jsonPath("$.detail").value(QuoteRequest.LOAN_TERM_RANGE_MSG));
     }
 
     @Test
@@ -134,7 +132,7 @@ class QuoteControllerValidationTest {
                   .content(
                       "{\"loanAmount\":250000.00,\"loanTermInMonths\":36,\"riskBand\":\"EXTREME\"}"))
           .andExpect(status().isBadRequest())
-          .andExpect(jsonPath("$.detail").value("Please select a valid risk band."));
+          .andExpect(jsonPath("$.detail").value(QuoteRequest.RISK_BAND_MSG));
     }
 
     @Test
@@ -146,7 +144,7 @@ class QuoteControllerValidationTest {
                   .contentType(JSON)
                   .content("{\"loanAmount\":250000.00,\"loanTermInMonths\":36,\"riskBand\":null}"))
           .andExpect(status().isBadRequest())
-          .andExpect(jsonPath("$.detail").value("Please select a valid risk band."));
+          .andExpect(jsonPath("$.detail").value(QuoteRequest.RISK_BAND_MSG));
     }
   }
 

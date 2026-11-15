@@ -7,6 +7,18 @@ import type { components } from './generated'
  */
 export type OpenApiQuoteRequest = components['schemas']['QuoteRequest']
 
+// Boundary value constants — single source of truth for UI validation
+export const MIN_LOAN_AMOUNT = 1000
+export const MAX_LOAN_AMOUNT = 10000000
+export const MIN_LOAN_TERM_MONTHS = 6
+export const MAX_LOAN_TERM_MONTHS = 360
+export const RISK_BANDS = ['LOW', 'MEDIUM', 'HIGH'] as const
+
+// Contractual validation error messages (Functional Requirement FR-1)
+export const LOAN_AMOUNT_ERROR = 'Loan amount must be between $1,000 and $10,000,000.'
+export const LOAN_TERM_ERROR = 'Loan term must be between 6 and 360 months.'
+export const RISK_BAND_ERROR = 'Please select a valid risk band.'
+
 /**
  * Zod validation schema for client-side loan quote requests.
  *
@@ -23,26 +35,26 @@ export const quoteSchema = z.object({
    * Bound: [$1,000.00, $10,000,000.00].
    */
   loanAmount: z
-    .number({ message: 'Loan amount must be between $1,000 and $10,000,000.' })
-    .min(1000, 'Loan amount must be between $1,000 and $10,000,000.')
-    .max(10000000, 'Loan amount must be between $1,000 and $10,000,000.'),
+    .number({ message: LOAN_AMOUNT_ERROR })
+    .min(MIN_LOAN_AMOUNT, LOAN_AMOUNT_ERROR)
+    .max(MAX_LOAN_AMOUNT, LOAN_AMOUNT_ERROR),
 
   /**
    * Loan tenure duration in months.
    * Bound: [6, 360] integer months.
    */
   loanTermInMonths: z
-    .number({ message: 'Loan term must be between 6 and 360 months.' })
-    .int('Loan term must be between 6 and 360 months.')
-    .min(6, 'Loan term must be between 6 and 360 months.')
-    .max(360, 'Loan term must be between 6 and 360 months.'),
+    .number({ message: LOAN_TERM_ERROR })
+    .int(LOAN_TERM_ERROR)
+    .min(MIN_LOAN_TERM_MONTHS, LOAN_TERM_ERROR)
+    .max(MAX_LOAN_TERM_MONTHS, LOAN_TERM_ERROR),
 
   /**
    * Operational risk assessment tier.
    * Permitted values: 'LOW' | 'MEDIUM' | 'HIGH'.
    */
-  riskBand: z.enum(['LOW', 'MEDIUM', 'HIGH'], {
-    message: 'Please select a valid risk band.',
+  riskBand: z.enum(RISK_BANDS, {
+    message: RISK_BAND_ERROR,
   }),
 })
 

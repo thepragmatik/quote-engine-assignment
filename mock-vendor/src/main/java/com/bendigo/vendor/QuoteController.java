@@ -28,6 +28,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class QuoteController {
 
+  public static final String VENDOR_QUOTES_PATH = "/api/v1/vendor/quotes";
+  public static final String API_KEY_HEADER = "x-api-key";
+  public static final String VERIFICATION_CODE_PREFIX = "VC-";
+
   private final FaultEngine faultEngine;
   private final Environment env;
 
@@ -44,9 +48,9 @@ public class QuoteController {
    * @return {@link ResponseEntity} containing verification metadata or a simulated fault status
    *     code
    */
-  @PostMapping("/api/v1/vendor/quotes")
+  @PostMapping(VENDOR_QUOTES_PATH)
   public ResponseEntity<Map<String, Object>> quote(
-      @RequestHeader(value = "x-api-key", required = false) String apiKey) {
+      @RequestHeader(value = API_KEY_HEADER, required = false) String apiKey) {
     // ATTENTION(security): the API key is compared per request, in constant time —
     // a plain String.equals leaks key length/prefix via timing.
     String expectedKey = env.getProperty("vendor.api-key", "");
@@ -63,7 +67,7 @@ public class QuoteController {
           ResponseEntity.ok(
               Map.of(
                   "verificationCode",
-                  "VC-" + UUID.randomUUID().toString().replace("-", ""),
+                  VERIFICATION_CODE_PREFIX + UUID.randomUUID().toString().replace("-", ""),
                   "verified",
                   true));
       case ERROR_500 -> ResponseEntity.status(500).build();

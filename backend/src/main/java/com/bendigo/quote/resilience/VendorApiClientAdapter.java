@@ -57,8 +57,6 @@ import org.springframework.web.client.RestClientException;
 @Component
 public class VendorApiClientAdapter implements VendorQuotePort {
 
-  private static final String VERIFY_PATH = "/api/v1/vendor/quotes";
-
   private final RestClient restClient;
   private final ObjectProvider<VendorApiClientAdapter> selfProvider;
 
@@ -66,6 +64,8 @@ public class VendorApiClientAdapter implements VendorQuotePort {
       RestClient.Builder restClientBuilder,
       @Value("${vendor.api-url}") String apiUrl,
       @Value("${vendor.api-key}") String apiKey,
+      @Value("${vendor.connect-timeout:1s}") Duration connectTimeout,
+      @Value("${vendor.read-timeout:2s}") Duration readTimeout,
       ObjectProvider<VendorApiClientAdapter> selfProvider) {
     // ATTENTION(security): fail fast on a hostile or misconfigured VENDOR_API_URL.
     // Verifies scheme and host upfront to safeguard against SSRF or unencrypted credential egress.
@@ -76,15 +76,16 @@ public class VendorApiClientAdapter implements VendorQuotePort {
             .baseUrl(apiUrl)
             .defaultHeader("x-api-key", apiKey)
             // ATTENTION(resilience): enforce physical socket timeouts matching the TimeLimiter
-            .requestFactory(httpRequestFactory())
+            .requestFactory(httpRequestFactory(connectTimeout, readTimeout))
             .build();
     this.selfProvider = selfProvider;
   }
 
-  private static SimpleClientHttpRequestFactory httpRequestFactory() {
+  private static SimpleClientHttpRequestFactory httpRequestFactory(
+      Duration connectTimeout, Duration readTimeout) {
     SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-    factory.setConnectTimeout(Duration.ofSeconds(1));
-    factory.setReadTimeout(Duration.ofSeconds(2));
+    factory.setConnectTimeout(connectTimeout);
+    factory.setReadTimeout(readTimeout);
     return factory;
   }
 

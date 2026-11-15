@@ -3,6 +3,7 @@ package com.bendigo.quote.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.bendigo.quote.api.QuoteRequest;
 import java.math.BigDecimal;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -95,7 +96,7 @@ class MatrixCommissionStrategyTest {
     void rejectsNullLoanAmount() {
       assertThatThrownBy(() -> strategy.calculate(null, 36, "MEDIUM"))
           .isInstanceOf(InvalidLoanParameterException.class)
-          .hasMessageContaining("Loan amount must not be null");
+          .hasMessageContaining(QuoteRequest.LOAN_AMOUNT_REQUIRED_MSG);
     }
 
     @Test
@@ -103,7 +104,7 @@ class MatrixCommissionStrategyTest {
     void rejectsNullRiskBand() {
       assertThatThrownBy(() -> strategy.calculate(new BigDecimal("250000.00"), 36, null))
           .isInstanceOf(InvalidLoanParameterException.class)
-          .hasMessageContaining("Please select a valid risk band");
+          .hasMessageContaining(QuoteRequest.RISK_BAND_MSG);
     }
 
     @Test
@@ -111,7 +112,7 @@ class MatrixCommissionStrategyTest {
     void rejectsBlankRiskBand() {
       assertThatThrownBy(() -> strategy.calculate(new BigDecimal("250000.00"), 36, "   "))
           .isInstanceOf(InvalidLoanParameterException.class)
-          .hasMessageContaining("Please select a valid risk band");
+          .hasMessageContaining(QuoteRequest.RISK_BAND_MSG);
     }
 
     @Test
@@ -119,7 +120,7 @@ class MatrixCommissionStrategyTest {
     void rejectsUnknownRiskBand() {
       assertThatThrownBy(() -> strategy.calculate(new BigDecimal("250000.00"), 36, "NON_EXISTENT"))
           .isInstanceOf(InvalidLoanParameterException.class)
-          .hasMessageContaining("Please select a valid risk band");
+          .hasMessageContaining(QuoteRequest.RISK_BAND_MSG);
     }
 
     @Test

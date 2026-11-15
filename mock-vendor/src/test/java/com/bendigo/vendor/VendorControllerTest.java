@@ -38,6 +38,9 @@ class VendorControllerTest {
 
   private static final String BODY =
       "{\"loanAmount\":250000,\"loanTermInMonths\":36,\"riskBand\":\"MEDIUM\"}";
+  private static final String DEV_API_KEY = "dev-vendor-secret";
+  private static final String PATH = QuoteController.VENDOR_QUOTES_PATH;
+  private static final String HEADER = QuoteController.API_KEY_HEADER;
 
   @Autowired MockMvc mockMvc;
 
@@ -61,7 +64,7 @@ class VendorControllerTest {
     void missingApiKey_unauthorized() throws Exception {
       forced(FaultEngine.Outcome.OK);
       mockMvc
-          .perform(post("/api/v1/vendor/quotes").content(BODY).contentType("application/json"))
+          .perform(post(PATH).content(BODY).contentType("application/json"))
           .andExpect(status().isUnauthorized())
           .andExpect(jsonPath("$.detail").value("Unauthorized"));
     }
@@ -71,11 +74,7 @@ class VendorControllerTest {
     void wrongApiKey_unauthorized() throws Exception {
       forced(FaultEngine.Outcome.OK);
       mockMvc
-          .perform(
-              post("/api/v1/vendor/quotes")
-                  .content(BODY)
-                  .header("x-api-key", "nope")
-                  .contentType("application/json"))
+          .perform(post(PATH).content(BODY).header(HEADER, "nope").contentType("application/json"))
           .andExpect(status().isUnauthorized())
           .andExpect(jsonPath("$.detail").value("Unauthorized"));
     }
@@ -92,12 +91,11 @@ class VendorControllerTest {
       forced(FaultEngine.Outcome.OK);
       mockMvc
           .perform(
-              post("/api/v1/vendor/quotes")
-                  .content(BODY)
-                  .header("x-api-key", "dev-vendor-secret")
-                  .contentType("application/json"))
+              post(PATH).content(BODY).header(HEADER, DEV_API_KEY).contentType("application/json"))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.verificationCode").value(Matchers.startsWith("VC-")))
+          .andExpect(
+              jsonPath("$.verificationCode")
+                  .value(Matchers.startsWith(QuoteController.VERIFICATION_CODE_PREFIX)))
           .andExpect(jsonPath("$.verified").value(true));
     }
 
@@ -107,10 +105,7 @@ class VendorControllerTest {
       forced(FaultEngine.Outcome.ERROR_500);
       mockMvc
           .perform(
-              post("/api/v1/vendor/quotes")
-                  .content(BODY)
-                  .header("x-api-key", "dev-vendor-secret")
-                  .contentType("application/json"))
+              post(PATH).content(BODY).header(HEADER, DEV_API_KEY).contentType("application/json"))
           .andExpect(status().isInternalServerError());
     }
 
@@ -120,10 +115,7 @@ class VendorControllerTest {
       forced(FaultEngine.Outcome.BAD_REQUEST_400);
       mockMvc
           .perform(
-              post("/api/v1/vendor/quotes")
-                  .content(BODY)
-                  .header("x-api-key", "dev-vendor-secret")
-                  .contentType("application/json"))
+              post(PATH).content(BODY).header(HEADER, DEV_API_KEY).contentType("application/json"))
           .andExpect(status().isBadRequest());
     }
 
@@ -134,10 +126,7 @@ class VendorControllerTest {
       forced(FaultEngine.Outcome.LATENCY_504);
       mockMvc
           .perform(
-              post("/api/v1/vendor/quotes")
-                  .content(BODY)
-                  .header("x-api-key", "dev-vendor-secret")
-                  .contentType("application/json"))
+              post(PATH).content(BODY).header(HEADER, DEV_API_KEY).contentType("application/json"))
           .andExpect(status().isGatewayTimeout());
     }
   }

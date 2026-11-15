@@ -56,6 +56,8 @@ resilience4j:
 vendor:
   api-url: ${VENDOR_API_URL:http://mock-vendor:8001}
   api-key: ${VENDOR_API_KEY:dev-vendor-secret}
+  connect-timeout: ${VENDOR_CONNECT_TIMEOUT:1s}
+  read-timeout: ${VENDOR_READ_TIMEOUT:2s}
 
 management:
   endpoints:

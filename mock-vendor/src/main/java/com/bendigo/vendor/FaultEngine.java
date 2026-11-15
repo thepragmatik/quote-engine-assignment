@@ -34,6 +34,15 @@ import java.util.random.RandomGenerator;
  */
 public record FaultEngine(RandomGenerator random, double faultRate) {
 
+  /** Fraction of the fault rate partition assigned to HTTP 500 internal errors (50%). */
+  public static final double ERROR_PARTITION_RATIO = 0.50;
+
+  /** Cumulative fraction of the fault rate partition for HTTP 400 bad requests (75%). */
+  public static final double BAD_REQUEST_PARTITION_RATIO = 0.75;
+
+  /** Decimal scaling factor for rounding partition thresholds to 4 decimal places. */
+  private static final double SCALE_FACTOR = 10000.0;
+
   /**
    * Maps a normalized random draw value into a deterministic fault outcome.
    *
@@ -46,11 +55,13 @@ public record FaultEngine(RandomGenerator random, double faultRate) {
     }
     // ATTENTION(resilience): round partition thresholds to 4 decimal places to prevent IEEE 754
     // binary floating-point epsilon dust (e.g. 0.2 * 0.75 evaluating to 0.15000000000000002).
-    double errorThreshold = Math.round(faultRate * 0.5 * 10000.0) / 10000.0;
+    double errorThreshold =
+        Math.round(faultRate * ERROR_PARTITION_RATIO * SCALE_FACTOR) / SCALE_FACTOR;
     if (r < errorThreshold) {
       return Outcome.ERROR_500;
     }
-    double badRequestThreshold = Math.round(faultRate * 0.75 * 10000.0) / 10000.0;
+    double badRequestThreshold =
+        Math.round(faultRate * BAD_REQUEST_PARTITION_RATIO * SCALE_FACTOR) / SCALE_FACTOR;
     if (r < badRequestThreshold) {
       return Outcome.BAD_REQUEST_400;
     }
