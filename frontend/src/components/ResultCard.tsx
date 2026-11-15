@@ -20,10 +20,14 @@ export interface ResultCardProps {
  * No monetary arithmetic occurs in the client.
  */
 export default function ResultCard({ result }: ResultCardProps) {
-  const pct = (result.commissionRate * 100).toFixed(4) + '%'
-  const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
-    result.totalCommission
-  )
+  const pct = Number.isFinite(result.commissionRate)
+    ? (result.commissionRate * 100).toFixed(4) + '%'
+    : '0.0000%'
+  const currency = Number.isFinite(result.totalCommission)
+    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+        result.totalCommission
+      )
+    : '$0.00'
 
   return (
     <div

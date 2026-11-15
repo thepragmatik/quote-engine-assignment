@@ -59,7 +59,7 @@ export default function ErrorBanner({ message, circuitOpen, attempt, onRetry }: 
           : 'rounded-lg border border-red-400 bg-red-50 p-4 space-y-2'
       }
     >
-      <p className={circuitOpen ? 'text-orange-800 text-sm font-medium' : 'text-red-700 text-sm font-medium'}>
+      <p className={circuitOpen ? 'text-orange-800 text-sm font-medium break-words' : 'text-red-700 text-sm font-medium break-words'}>
         {message}
       </p>
       <button

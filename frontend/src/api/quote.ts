@@ -66,5 +66,20 @@ export async function requestQuote(payload: QuotePayload): Promise<QuoteResult> 
     throw new QuoteHttpError(res.status, body.detail ?? 'Request failed.', body.state)
   }
 
+  // Defensive validation: guard against 200 responses with non-JSON or missing fields (e.g. captive portals)
+  if (
+    typeof body !== 'object' ||
+    body === null ||
+    typeof body.quoteId !== 'string' ||
+    typeof body.commissionRate !== 'number' ||
+    typeof body.totalCommission !== 'number'
+  ) {
+    throw new QuoteHttpError(
+      502,
+      'Invalid response payload received from quotation service.',
+      undefined
+    )
+  }
+
   return body as QuoteResult
 }
