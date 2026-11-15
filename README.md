@@ -85,6 +85,12 @@ commission matrix, all Resilience4j parameters.
 - Browser security headers (CSP, X-Frame-Options DENY, HSTS, nosniff) on the UI
   server; zero cross-origin requests (same-origin nginx proxy) — this is the
   design mechanism satisfying the CORS-restriction requirement.
+- **Contract-First Schema Synchronization (ADR-007):** Both frontend and backend evolve
+  from `.github/specs/openapi.yaml` as the Single Source of Truth:
+  - Frontend: `npm run codegen` compiles OpenAPI into TypeScript types (`src/api/generated.ts`);
+    Zod schemas enforce bidirectional compile-time type assertions.
+  - Backend: `OpenApiContractDriftTest` parses `openapi.yaml` during every `mvn test`,
+    asserting that Java DTO records and Bean Validation annotations match the spec.
 
 ## Performance (NFR)
 

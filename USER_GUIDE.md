@@ -68,6 +68,13 @@ curl -s -X POST http://localhost:8000/api/v1/quotes -H 'Content-Type: applicatio
 FAULT_RATE=0.2 ./scripts/perf.sh 100 8
 ```
 
+## Contract-First Codegen (Frontend Schema Sync)
+
+```bash
+# Re-generate TypeScript types whenever .github/specs/openapi.yaml changes
+cd frontend && npm run codegen
+```
+
 ## Tuning the fault engine
 
 ```bash

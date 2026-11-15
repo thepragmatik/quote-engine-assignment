@@ -1,4 +1,10 @@
 import type { QuotePayload } from './quoteSchema'
+import type { components } from './generated'
+
+/**
+ * Authoritative response payload type generated from `.github/specs/openapi.yaml`.
+ */
+export type OpenApiQuoteResponse = components['schemas']['QuoteResponse']
 
 /**
  * Successful quote calculation payload returned by the backend API.
@@ -16,6 +22,10 @@ export interface QuoteResult {
    */
   totalCommission: number
 }
+
+// Compile-time check ensuring QuoteResult satisfies OpenApiQuoteResponse
+const _quoteResponseContractCheck: OpenApiQuoteResponse = {} as QuoteResult
+void _quoteResponseContractCheck
 
 /**
  * Structured HTTP error representing non-2xx responses from the quote service.

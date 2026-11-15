@@ -94,3 +94,4 @@ Every judgment call in the code carries `// ATTENTION(kind): ...`; grep
 - **[ADR-004](docs/adr/ADR-004-docker-compose.md):** Multi-Container Orchestration via Docker Compose
 - **[ADR-005](docs/adr/ADR-005-spec-deviations.md):** Spec Deviations & Merged Business Rules
 - **[ADR-006](docs/adr/ADR-006-loan-bounds-constants.md):** Loan Policy Bounds Are Compile-Time Constants
+- **[ADR-007](docs/adr/ADR-007-contract-first-schema-sync.md):** Contract-First API Specification & Schema Evolution
