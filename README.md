@@ -86,6 +86,12 @@ commission matrix, all Resilience4j parameters.
   server; zero cross-origin requests (same-origin nginx proxy) — this is the
   design mechanism satisfying the CORS-restriction requirement.
 
+## Performance (NFR)
+
+Happy-path latency spot-check (2026-11-15, `FAULT_RATE=0`, 20 samples after 3
+warmup, full stack in Docker): **p95 = 6.6 ms** (min 4.5 ms, median 5.0 ms,
+max 9.4 ms) — well within the spec's <100 ms p95 budget.
+
 ## Honest deviations & disclosures
 
 - **Stack versions:** Java 25 LTS + Spring Boot 4.1.2 (user-directed; supersedes
