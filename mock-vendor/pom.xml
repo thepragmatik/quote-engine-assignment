@@ -31,11 +31,40 @@
     </dependency>
   </dependencies>
 
-  <build>
+<build>
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>2.44.2</version>
+        <executions><execution><goals><goal>apply</goal></goals><phase>validate</phase></execution></executions>
+        <configuration><googleJavaFormat/></configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.14</version>
+        <executions>
+          <execution><goals><goal>prepare-agent</goal></goals></execution>
+          <execution>
+            <id>check</id><goals><goal>check</goal></goals><phase>verify</phase>
+            <configuration>
+              <rules><rule><element>BUNDLE</element><limits><limit><minimum>0.80</minimum></limit></limits></rule></rules>
+              <excludes><exclude>**/*Application</exclude></excludes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.owasp</groupId>
+        <artifactId>dependency-check-maven</artifactId>
+        <version>12.1.0</version>
+        <configuration><failBuildOnCVSS>7</failBuildOnCVSS></configuration>
+        <executions><execution><goals><goal>check</goal></goals><phase>verify</phase></execution></executions>
       </plugin>
     </plugins>
   </build>
