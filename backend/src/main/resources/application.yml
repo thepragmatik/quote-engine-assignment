@@ -1,3 +1,6 @@
+server:
+  port: 8000
+
 # ATTENTION(security): strict deserialization — unknown properties in request bodies are rejected
 # (Jackson 3 flipped the 2.x default to lenient; the QuoteRequest annotation alone is not enough).
 spring:
