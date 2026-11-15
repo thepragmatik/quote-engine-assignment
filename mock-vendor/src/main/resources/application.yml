@@ -1,0 +1,8 @@
+server:
+  port: 8001
+
+vendor:
+  api-key: ${VENDOR_API_KEY:dev-vendor-secret}
+  fault-rate: ${FAULT_RATE:0.2}
+  latency-min-ms: ${VENDOR_LATENCY_MIN_MS:100}
+  latency-max-ms: ${VENDOR_LATENCY_MAX_MS:2000}
