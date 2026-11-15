@@ -25,9 +25,12 @@ public class QuoteController {
     @PostMapping("/api/v1/vendor/quotes")
     public ResponseEntity<Map<String, Object>> quote(
             @RequestHeader(value = "x-api-key", required = false) String apiKey) {
-        // ATTENTION(security): the API key is compared per request.
-        String expectedKey = env.getProperty("vendor.api-key");
-        if (apiKey == null || !apiKey.equals(expectedKey)) {
+        // ATTENTION(security): the API key is compared per request, in constant time —
+        // a plain String.equals leaks key length/prefix via timing.
+        String expectedKey = env.getProperty("vendor.api-key", "");
+        byte[] given = apiKey == null ? new byte[0] : apiKey.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] expected = expectedKey.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        if (given.length == 0 || !java.security.MessageDigest.isEqual(given, expected)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("detail", "Unauthorized"));
         }
 
@@ -47,8 +50,10 @@ public class QuoteController {
     }
 
     private void sleepRandomLatency() {
-        long minMs = Long.parseLong(env.getProperty("vendor.latency-min-ms", "100"));
-        long maxMs = Long.parseLong(env.getProperty("vendor.latency-max-ms", "2000"));
+        // ATTENTION(config): defaults live ONLY in application.yml (Rule 2) — no second
+        // source of truth here.
+        long minMs = Long.parseLong(env.getProperty("vendor.latency-min-ms"));
+        long maxMs = Long.parseLong(env.getProperty("vendor.latency-max-ms"));
         long sleepMs = (minMs >= maxMs) ? minMs : faultEngine.random().nextLong(minMs, maxMs);
         try {
             Thread.sleep(sleepMs);

@@ -4,7 +4,9 @@ services:
     build: { context: ./mock-vendor }
     ports: ["${PORT_VENDOR:-8001}:8001"]
     environment:
-      - VENDOR_API_KEY=${VENDOR_API_KEY:-dev-vendor-secret}
+      # ATTENTION(security): fail closed — no dev default here. The key MUST come from
+      # the environment (see .env.example). compose refuses to start otherwise.
+      - VENDOR_API_KEY=${VENDOR_API_KEY:?VENDOR_API_KEY must be set - copy .env.example to .env}
       - FAULT_RATE=${FAULT_RATE:-0.2}
       - VENDOR_LATENCY_MIN_MS=${VENDOR_LATENCY_MIN_MS:-100}
       - VENDOR_LATENCY_MAX_MS=${VENDOR_LATENCY_MAX_MS:-2000}
@@ -15,7 +17,8 @@ services:
     ports: ["${PORT_BACKEND:-8000}:8000"]
     environment:
       - VENDOR_API_URL=http://mock-vendor:8001
-      - VENDOR_API_KEY=${VENDOR_API_KEY:-dev-vendor-secret}
+      # ATTENTION(security): fail closed — see the mock-vendor service note above.
+      - VENDOR_API_KEY=${VENDOR_API_KEY:?VENDOR_API_KEY must be set - copy .env.example to .env}
     depends_on: [mock-vendor]
     # ATTENTION(design): wget-based healthcheck (alpine has no curl; distroless has
     # neither — see ADR-005)
