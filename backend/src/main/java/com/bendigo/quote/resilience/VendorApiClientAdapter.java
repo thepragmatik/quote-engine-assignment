@@ -12,6 +12,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeoutException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -56,6 +58,8 @@ import org.springframework.web.client.RestClientException;
  */
 @Component
 public class VendorApiClientAdapter implements VendorQuotePort {
+
+  private static final Logger log = LoggerFactory.getLogger(VendorApiClientAdapter.class);
 
   private final RestClient restClient;
   private final ObjectProvider<VendorApiClientAdapter> selfProvider;
@@ -151,12 +155,19 @@ public class VendorApiClientAdapter implements VendorQuotePort {
    */
   private VendorVerification circuitFallback(
       BigDecimal loanAmount, int termMonths, String riskBand, CallNotPermittedException ex) {
+    log.warn(
+        "Vendor circuit breaker is OPEN — fast-failing partner verification call without network dispatch");
     throw new CircuitOpenException("Vendor circuit is open");
   }
 
   private VendorVerification postVendorQuote(
       BigDecimal loanAmount, int termMonths, String riskBand) {
     try {
+      log.debug(
+          "Dispatching HTTP verification attempt to partner vendor: amount={}, termMonths={}, riskBand={}",
+          loanAmount,
+          termMonths,
+          riskBand);
       VendorVerification verification =
           restClient
               .post()
@@ -175,18 +186,25 @@ public class VendorApiClientAdapter implements VendorQuotePort {
       if (verification == null || !verification.verified()) {
         throw new VendorServiceUnavailableException("Vendor could not verify the quote");
       }
+      log.debug(
+          "Partner vendor verification successful: code={}, verified={}",
+          verification.verificationCode(),
+          verification.verified());
       return verification;
     } catch (HttpStatusCodeException e) {
       int status = e.getStatusCode().value();
+      log.warn("Partner vendor returned HTTP {}: {}", status, e.getMessage());
       if (status == 500 || status == 504) {
         throw new RetryableVendorException("Vendor transient failure: HTTP " + status, e);
       }
       throw new VendorServiceUnavailableException("Vendor rejected the request: HTTP " + status, e);
     } catch (ResourceAccessException e) {
+      log.warn("Partner vendor network access error: {}", e.getMessage());
       throw new RetryableVendorException("Vendor network failure", e);
     } catch (RestClientException e) {
       // Resilience Note: RestClient wraps raw socket/connect timeouts in a plain
       // RestClientException (not a ResourceAccessException) — classify by root cause.
+      log.warn("Partner vendor HTTP client error: {}", e.getMessage());
       if (rootCauseIsTransientIo(e)) {
         throw new RetryableVendorException("Vendor call timed out or connection failure", e);
       }

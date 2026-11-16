@@ -4,6 +4,8 @@ import com.bendigo.quote.resilience.CircuitOpenException;
 import com.bendigo.quote.resilience.RetryableVendorException;
 import com.bendigo.quote.resilience.VendorServiceUnavailableException;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
@@ -28,6 +30,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
+  private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
+
   /**
    * Handles validation constraints and unreadable HTTP message exceptions (e.g. malformed JSON or
    * unknown properties).
@@ -42,6 +46,7 @@ public class ApiExceptionHandler {
               .map(FieldError::getDefaultMessage)
               .orElse(detail);
     }
+    log.warn("Rejected invalid quote request payload: {}", detail);
     return ResponseEntity.badRequest().body(Map.of("detail", detail));
   }
 
@@ -53,6 +58,9 @@ public class ApiExceptionHandler {
   ResponseEntity<Map<String, String>> vendorUnavailable(RuntimeException ex) {
     // RetryableVendorException reaches here only when all retry attempts have been exhausted
     // (fail-after-max-attempts = true), fulfilling the HTTP 502 Bad Gateway contract.
+    log.error(
+        "Vendor verification failed after retry exhaustion or non-retryable error: {}",
+        ex.getMessage());
     return ResponseEntity.status(502)
         .body(Map.of("detail", "Vendor verification unavailable. Please retry."));
   }
@@ -63,6 +71,7 @@ public class ApiExceptionHandler {
    */
   @ExceptionHandler(CircuitOpenException.class)
   ResponseEntity<Map<String, String>> circuitOpen(CircuitOpenException ex) {
+    log.warn("Circuit breaker is OPEN — rejected inbound request fast: {}", ex.getMessage());
     return ResponseEntity.status(503)
         .body(
             Map.of(

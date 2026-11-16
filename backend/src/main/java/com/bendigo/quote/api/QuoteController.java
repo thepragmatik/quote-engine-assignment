@@ -4,6 +4,8 @@ import com.bendigo.quote.domain.CommissionCalculationStrategy;
 import com.bendigo.quote.resilience.VendorQuotePort;
 import jakarta.validation.Valid;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,6 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class QuoteController {
 
+  private static final Logger log = LoggerFactory.getLogger(QuoteController.class);
+
   private final VendorQuotePort vendorPort;
   private final CommissionCalculationStrategy strategy;
 
@@ -42,6 +46,12 @@ public class QuoteController {
    */
   @PostMapping("/api/v1/quotes")
   public QuoteResponse createQuote(@Valid @RequestBody QuoteRequest request) {
+    log.info(
+        "Processing commission quote request: amount={}, termMonths={}, riskBand={}",
+        request.loanAmount(),
+        request.loanTermInMonths(),
+        request.riskBand());
+
     // FR-2 orchestration: vendor verification occurs FIRST; commission is computed only for
     // verified partners.
     vendorPort.verify(request.loanAmount(), request.loanTermInMonths(), request.riskBand());
@@ -49,7 +59,13 @@ public class QuoteController {
     var quote =
         strategy.calculate(request.loanAmount(), request.loanTermInMonths(), request.riskBand());
 
-    return new QuoteResponse(
-        UUID.randomUUID().toString(), quote.commissionRate(), quote.totalCommission());
+    String quoteId = UUID.randomUUID().toString();
+    log.info(
+        "Successfully issued quote: id={}, rate={}, total={}",
+        quoteId,
+        quote.commissionRate(),
+        quote.totalCommission());
+
+    return new QuoteResponse(quoteId, quote.commissionRate(), quote.totalCommission());
   }
 }

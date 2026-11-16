@@ -4,6 +4,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
@@ -27,6 +29,8 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 public class QuoteController {
+
+  private static final Logger log = LoggerFactory.getLogger(QuoteController.class);
 
   public static final String VENDOR_QUOTES_PATH = "/api/v1/vendor/quotes";
   public static final String API_KEY_HEADER = "x-api-key";
@@ -57,11 +61,14 @@ public class QuoteController {
     byte[] given = apiKey == null ? new byte[0] : apiKey.getBytes(StandardCharsets.UTF_8);
     byte[] expected = expectedKey.getBytes(StandardCharsets.UTF_8);
     if (given.length == 0 || !MessageDigest.isEqual(given, expected)) {
+      log.warn(
+          "Rejected unauthorized partner quote verification attempt (invalid or missing x-api-key)");
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("detail", "Unauthorized"));
     }
 
     double r = faultEngine.random().nextDouble();
     FaultEngine.Outcome outcome = faultEngine.classify(r);
+    log.info("Classified stochastic partner outcome: {}", outcome);
     return switch (outcome) {
       case OK ->
           ResponseEntity.ok(
