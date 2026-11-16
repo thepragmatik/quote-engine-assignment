@@ -13,8 +13,11 @@ This project consolidates requirements from the business specification and techn
 3. **Commission formula frozen**: `base_rate + term_multiplier × (months/12)`, rate quantized 4dp
    HALF_EVEN before multiplication. The canonical worked example ($250,000 / 36 months / MEDIUM → 2.3100% / $5,775.00)
    is documented in README.
-4. **Alpine JRE instead of distroless**: the compose healthcheck needs wget;
-   distroless has no shell/wget. Non-root UID 10001 is preserved.
+4. **Base Image Strategy (Compose vs. Production Target)**:
+   In local Docker Compose, `eclipse-temurin:25-jre-alpine` running as unprivileged UID 10001
+   is used to allow lightweight wget health polling and non-root auditability without custom binary sidecars (~180MB vs >500MB).
+   In production Kubernetes (ADR-008), the runtime transitions to true Distroless (`gcr.io/distroless/java25:nonroot`)
+   because Kubernetes kubelets probe `/actuator/health` externally over HTTP (`httpGet`), eliminating all in-container shell and utility dependencies.
 5. **Same-origin nginx proxy** instead of a CORS allow-list: satisfies §6's
    CORS-restriction intent more strongly (zero cross-origin browser requests)
    and avoids the Next/Vite build-time API-URL trap.

@@ -233,3 +233,12 @@ A 39-probe automated attack battery was executed against the live stack testing 
 ├── docker-compose.yml              # Local multi-service orchestration definition
 └── README.md                       # Master engineering documentation
 ```
+
+---
+
+## AI Transparency Disclosure
+
+In accordance with modern engineering integrity standards and assessment guidelines, this application was developed with AI assistance (Hermes Agent orchestrating specialized subagents).
+
+* **Human Supervision & Architectural Governance**: All system specifications, threat models, mathematical precision rules, code reviews, and multi-stage verification runs were directed, reviewed, and verified by a human engineer.
+* **Audit & Decision Trail**: Every architectural choice, resilience pattern, and technical trade-off is recorded in the Architectural Decision Records ([`docs/adr/`](docs/adr/)), the technical rules ([`.github/specs/spec.md`](.github/specs/spec.md)), and contextually documented throughout the codebase.

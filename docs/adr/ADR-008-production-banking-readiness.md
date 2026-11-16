@@ -51,6 +51,7 @@ To transition this system into a live regulated financial institution (e.g. an A
 ### 6. Supply Chain Security, SBOM & Container Signing
 * **Current State:** Maven plugins enforce SpotBugs, Spotless, and JaCoCo; OWASP Dependency-Check runs during verification.
 * **Production Architecture:**
+  * Transition from Alpine JRE to true **Distroless runtime images** (`gcr.io/distroless/java25:nonroot` or Chainguard Wolfi) in Kubernetes, utilizing external kubelet `httpGet` probes for liveness/readiness to eliminate all in-container package managers and shells.
   * Automated Software Bill of Materials (SBOM) generation (CycloneDX / SPDX) during CI/CD.
   * Container image signing using **Cosign / Sigstore**; Kubernetes admission controllers (e.g. Kyverno) reject unsigned images.
   * Continuous container vulnerability scanning via Amazon ECR / Trivy / Snyk blocking deployment of images with CVE severity &ge; HIGH.
