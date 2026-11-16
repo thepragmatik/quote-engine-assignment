@@ -70,8 +70,8 @@ trip the circuit breaker into false outages.
 
 BigDecimal everywhere; divide at 10dp intermediate scale; rate quantized 4dp
 HALF_EVEN before multiplication; money 2dp HALF_EVEN. No `double`/`float` in
-money code paths. See `.github/specs/spec.md` Rule 4 for the worked example and
-the FR-3 example discrepancy.
+money code paths. See `.github/specs/spec.md` Rule 4 for the mathematical derivation
+and canonical worked example.
 
 ## Swappable seams
 

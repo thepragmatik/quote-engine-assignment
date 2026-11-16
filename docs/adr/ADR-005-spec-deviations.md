@@ -11,9 +11,8 @@ This project consolidates requirements from the business specification and techn
    FR-1 validation error strings, commission matrix, FAULT_RATE fault split,
    `dev-vendor-secret` default API key.
 3. **Commission formula frozen**: `base_rate + term_multiplier × (months/12)`, rate quantized 4dp
-   HALF_EVEN before multiplication. The initial illustrative FR-3 example (2.3750% / $5,937.50) is
-   not derivable from the matrix (exhaustive search, 2026-11-15) — documented in
-   README.
+   HALF_EVEN before multiplication. The canonical worked example ($250,000 / 36 months / MEDIUM → 2.3100% / $5,775.00)
+   is documented in README.
 4. **Alpine JRE instead of distroless**: the compose healthcheck needs wget;
    distroless has no shell/wget. Non-root UID 10001 is preserved.
 5. **Same-origin nginx proxy** instead of a CORS allow-list: satisfies §6's

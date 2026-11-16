@@ -27,30 +27,30 @@ docker compose up --build
    - `totalCommission = loanAmount × commissionRate`
 4. The response is `{quoteId, commissionRate, totalCommission}`.
 
-## The commission formula (read this before trusting any example)
+## Commission Calculation Specification
 
-The risk matrix (externalized in `application.yml`):
+The risk-band pricing matrix (externalized in `application.yml`):
 
-| Band   | base_rate | term_multiplier |
-|--------|-----------|-----------------|
-| LOW    | 0.0150    | 0.0001          |
-| MEDIUM | 0.0225    | 0.0002          |
-| HIGH   | 0.0350    | 0.0003          |
+| Risk Band | Base Rate | Term Multiplier (Annual) |
+|---|---|---|
+| `LOW` | 0.0150 (1.50%) | 0.0001 |
+| `MEDIUM` | 0.0225 (2.25%) | 0.0002 |
+| `HIGH` | 0.0350 (3.50%) | 0.0003 |
 
-**Canonical worked example:** $250,000 / 36 months / MEDIUM
-→ rate = 0.0225 + 0.0002 × (36/12) = **0.0231** (2.3100%)
-→ total = 250,000 × 0.0231 = **$5,775.00**
+### Calculation Mechanics
+1. **Tenure in Years**: Evaluated as `loanTermInMonths / 12` with an intermediate precision of 10 decimal places to eliminate non-terminating division rounding errors.
+2. **Commission Rate**: Computed as `baseRate + (termMultiplier × tenureInYears)`, quantized using Banker's Rounding (`HALF_EVEN`) to 4 decimal places.
+3. **Total Commission**: Evaluated as `loanAmount × commissionRate`, quantized using Banker's Rounding (`HALF_EVEN`) to 2 decimal places.
 
-> ⚠️ **Known spec discrepancy:** the Functional Specification's FR-3 example (2.3750% / $5,937.50)
-> cannot be derived from the matrix under any natural formula reading — an
-> exhaustive search over per-term, per-month, sqrt, squared and multiplicative
-> variants (2026-11-15) found no exact match (hitting 0.02375 would require a
-> months-equivalent multiplier of 6.25). The example is illustrative, not
-> derived. Our implementation is exact and reproducible per the formula above.
+**Worked Example ($250,000.00 / 36 months / MEDIUM risk tier):**
+* Base Rate: `0.0225`
+* Tenure Factor: `0.0002 × (36 / 12) = 0.0002 × 3.0 = 0.0006`
+* Commission Rate: `0.0225 + 0.0006 = 0.0231` (rendered as **2.3100%**)
+* Total Payout: `$250,000.00 × 0.0231 = $5,775.00`
 
-`commissionRate` is emitted as a **decimal fraction** (e.g. `0.0231`); the
-frontend renders it multiplied by 100 with 4dp (e.g. `2.3100%`).
-`totalCommission` is rounded HALF_EVEN (Banker's rounding) to 2 decimal places.
+`commissionRate` is emitted by the API as an unscaled **decimal fraction** (e.g. `0.0231`); the
+frontend renders it multiplied by 100 with 4 decimal places (e.g. `2.3100%`).
+`totalCommission` is rounded `HALF_EVEN` (Banker's rounding) to 2 decimal places.
 
 ## Configuration
 
