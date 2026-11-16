@@ -18,4 +18,10 @@
     <Class name="com.bendigo.quote.domain.MatrixCommissionStrategy"/>
     <Bug pattern="CT_CONSTRUCTOR_THROW"/>
   </Match>
+  <!-- Security Note: CorrelationIdFilter validates the inbound X-Request-ID against a strict
+       safe regex ^[a-zA-Z0-9_.-]{1,64}$ and sanitizes CRLF before reflecting it onto the response header. -->
+  <Match>
+    <Class name="com.bendigo.quote.config.CorrelationIdFilter"/>
+    <Bug pattern="HRS_REQUEST_PARAMETER_TO_HTTP_HEADER"/>
+  </Match>
 </FindBugsFilter>

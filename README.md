@@ -110,6 +110,10 @@ The Resilience4j circuit breaker monitors the overall health of partner calls ac
 * **Clear Feedback**: When the circuit is open, the web UI displays an **amber warning banner** explaining that the partner quote service is temporarily paused to allow downstream recovery.
 * **Anti-Hammering Debounce**: The **Retry Quote** button is automatically locked for 2 seconds. This prevents frustrated users from repeatedly clicking the button and overwhelming the recovering partner service.
 
+### 4. Graceful Shutdown & In-Flight Request Draining
+* Both the backend and mock vendor containers configure `server.shutdown: graceful` with a 20-second phase timeout (`spring.lifecycle.timeout-per-shutdown-phase: 20s`).
+* When containers receive a `SIGTERM` signal during deployments or autoscaling, they stop accepting new traffic but allow in-flight quote calculations to finish cleanly, preventing dropped client connections.
+
 ---
 
 ## Security by Design (Defense-in-Depth)
@@ -132,13 +136,30 @@ Security is treated as a core architectural quality throughout the stack:
 4. **Constant-Time Authentication**:
    The mock partner vendor requires an `x-api-key` header. The secret is compared using `MessageDigest.isEqual` in constant time, eliminating byte-by-byte timing attack side-channels.
 
-5. **Contract-First Schema Evolution (ADR-007)**:
+5. **Edge Rate Limiting & Anti-Abuse**:
+   Nginx enforces shared-memory rate limiting (`rate=100r/s burst=250 nodelay`) on `/api/*`, returning HTTP 429 Too Many Requests if an external script hammers the API while allowing high-throughput parallel benchmark testing.
+
+6. **Contract-First Schema Evolution (ADR-007)**:
    The authoritative API contract lives in `.github/specs/openapi.yaml`. 
    * On the frontend, `npm run codegen` automatically compiles OpenAPI definitions into TypeScript types with compile-time type assertions.
    * On the backend, `OpenApiContractDriftTest` parses the OpenAPI specification during every test run, asserting that Java records and validation annotations match byte-for-byte.
 
-6. **Regulated Banking Production Roadmap (ADR-008)**:
+7. **Regulated Banking Production Roadmap (ADR-008)**:
    A formal architectural roadmap details the steps to elevate this containerized MVP into a live regulated banking environment under APRA CPS 234 and PCI-DSS compliance (Mutual TLS 1.3, private multi-AZ subnets, AWS Secrets Manager / Vault with KMS envelope encryption, and WAF protection).
+
+---
+
+## Observability, Tracing & Telemetry
+
+1. **Distributed Tracing & Correlation IDs (`X-Request-ID`)**:
+   * Nginx generates a unique correlation ID (`$request_id`) for every inbound request and injects it as `X-Request-ID`.
+   * Both the backend and mock vendor execute `CorrelationIdFilter`, populating the SLF4J Mapped Diagnostic Context (MDC).
+   * Every log line automatically captures `[traceId=...]` across all services, allowing complete distributed request tracing.
+   * The backend propagates `X-Request-ID` downstream when calling the vendor, and returns it on the HTTP response.
+
+2. **Prometheus Operational Metrics (`/actuator/prometheus`)**:
+   * The backend integrates Micrometer Prometheus registry, exposing real-time OpenMetrics time-series telemetry.
+   * Tracks Resilience4j circuit breaker state (`resilience4j_circuitbreaker_state`), retry counts, HTTP request latency histograms, and Java 25 virtual thread activity.
 
 ---
 

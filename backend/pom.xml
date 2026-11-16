@@ -57,6 +57,11 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
+    <!-- Observability Note: Prometheus metrics registry for /actuator/prometheus scrape telemetry -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
     <!-- Resilience Note: resilience4j-spring-boot4 requires spring-boot-starter-aspectj -->
     <dependency>
       <groupId>org.springframework.boot</groupId>

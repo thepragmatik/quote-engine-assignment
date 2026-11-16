@@ -1,8 +1,17 @@
 server:
   port: 8001
+  shutdown: graceful
+
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
 
 vendor:
   api-key: ${VENDOR_API_KEY:dev-vendor-secret}
   fault-rate: ${FAULT_RATE:0.2}
   latency-min-ms: ${VENDOR_LATENCY_MIN_MS:100}
   latency-max-ms: ${VENDOR_LATENCY_MAX_MS:2000}
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5p [traceId=%X{requestId:-none}] %t --- %-40.40logger{39} : %m%n"

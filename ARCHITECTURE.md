@@ -180,7 +180,36 @@ Every major infrastructure boundary is abstracted behind an interface. Any imple
 
 ---
 
-## 8. Contract-First Schema Synchronization (ADR-007)
+## 8. Observability, Distributed Tracing & Operational Telemetry
+
+The application implements four enterprise operational practices directly in code:
+
+### A. End-to-End Correlation IDs (`X-Request-ID`)
+* **Nginx Generation**: The edge gateway generates a unique `$request_id` for every inbound browser call and injects it as an `X-Request-ID` HTTP header.
+* **MDC Context Stamping**: Both Spring Boot services execute a `CorrelationIdFilter` (`Ordered.HIGHEST_PRECEDENCE`). The filter extracts the header (or generates a UUID if missing), sanitizes against CRLF injection, and populates the SLF4J **Mapped Diagnostic Context (MDC)**.
+* **Log Output**: Every log line automatically includes `[traceId=...]` across both the backend and mock vendor, enabling instant log aggregation in Splunk/Datadog.
+* **Downstream Propagation**: `VendorApiClientAdapter` extracts the trace ID from MDC and forwards `X-Request-ID` when communicating with the partner API.
+
+### B. Prometheus Metrics Telemetry (`/actuator/prometheus`)
+* The backend integrates `micrometer-registry-prometheus`, exposing real-time OpenMetrics time-series telemetry.
+* Key exported metrics:
+  * `resilience4j_circuitbreaker_state{name="vendor", state="closed|open|half_open"}`
+  * `resilience4j_circuitbreaker_failure_rate{name="vendor"}`
+  * `resilience4j_retry_calls{name="vendor"}`
+  * `http_server_requests_seconds_count`, `http_server_requests_seconds_sum`
+  * JVM memory, garbage collection, and Java 25 virtual thread telemetry.
+
+### C. Graceful Shutdown & Request Draining
+* Both Spring Boot services configure `server.shutdown: graceful` with a 20-second drain window (`spring.lifecycle.timeout-per-shutdown-phase: 20s`).
+* When containers receive a `SIGTERM` signal, they reject new traffic while allowing in-flight quote calculations to complete cleanly, preventing dropped client connections during rolling deployments.
+
+### D. Server-Side Edge Rate Limiting (Nginx)
+* Nginx maintains a shared-memory rate-limiting zone (`limit_req_zone $binary_remote_addr zone=api_limit:10m rate=100r/s;`).
+* Inbound requests on `/api/*` are bounded with `burst=250 nodelay`, returning **HTTP 429 Too Many Requests** on automated abuse while allowing high-throughput parallel benchmark harnesses to execute without artificial throttling.
+
+---
+
+## 9. Contract-First Schema Synchronization (ADR-007)
 
 To ensure that the frontend and backend never drift out of alignment, the repository establishes `.github/specs/openapi.yaml` as the **Single Source of Truth**:
 
@@ -189,7 +218,7 @@ To ensure that the frontend and backend never drift out of alignment, the reposi
 
 ---
 
-## 9. Regulated Banking Production Roadmap (ADR-008)
+## 10. Regulated Banking Production Roadmap (ADR-008)
 
 For complete technical specifications on elevating this local containerized MVP to an enterprise regulated banking deployment under Australian APRA CPS 234 and PCI-DSS compliance, see **[ADR-008](docs/adr/ADR-008-production-banking-readiness.md)**:
 * **Mutual TLS (mTLS 1.3)**: Zero-trust encrypted inter-service transport via Service Mesh (Istio) or Spring Boot SSL bundles.
@@ -201,7 +230,7 @@ For complete technical specifications on elevating this local containerized MVP 
 
 ---
 
-## 10. Architectural Decision Records (ADRs)
+## 11. Architectural Decision Records (ADRs)
 
 The repository records all foundational design choices in standardized ADR format under [`docs/adr/`](docs/adr/):
 * **[ADR-001](docs/adr/ADR-001-platform-choice.md)**: Selection of Java 25 LTS and Spring Boot 4.1.2 for modern language features, virtual threads, and enterprise support.

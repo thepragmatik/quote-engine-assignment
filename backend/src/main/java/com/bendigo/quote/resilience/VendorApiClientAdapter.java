@@ -168,11 +168,15 @@ public class VendorApiClientAdapter implements VendorQuotePort {
           loanAmount,
           termMonths,
           riskBand);
+      var reqSpec = restClient.post().uri(VERIFY_PATH).contentType(MediaType.APPLICATION_JSON);
+      String correlationId =
+          org.slf4j.MDC.get(com.bendigo.quote.config.CorrelationIdFilter.MDC_KEY);
+      if (correlationId != null && !correlationId.isBlank()) {
+        reqSpec.header(
+            com.bendigo.quote.config.CorrelationIdFilter.CORRELATION_ID_HEADER, correlationId);
+      }
       VendorVerification verification =
-          restClient
-              .post()
-              .uri(VERIFY_PATH)
-              .contentType(MediaType.APPLICATION_JSON)
+          reqSpec
               .body(
                   Map.of(
                       "loanAmount",

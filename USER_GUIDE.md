@@ -136,6 +136,33 @@ curl -X POST http://localhost:8000/api/v1/quotes \
 
 ---
 
+### Observability: Inspecting Correlation IDs & Metrics
+
+#### 1. Inspecting the `X-Request-ID` Correlation Header
+Run cURL with `-i` to view response headers. Notice that both the backend and Nginx return the tracking ID:
+
+```bash
+curl -i -X POST http://localhost:8000/api/v1/quotes \
+  -H 'Content-Type: application/json' \
+  -d '{"loanAmount": 250000.00, "loanTermInMonths": 36, "riskBand": "MEDIUM"}'
+```
+You will observe:
+```http
+HTTP/1.1 200 
+X-Request-ID: c8f3a91b-4d2e-4b16-92a5-c5d78645d7a0
+Content-Type: application/json
+```
+If you now inspect the container logs (`docker compose logs backend`), you will see the exact same `[traceId=c8f3a91b...]` stamped onto every log line for that transaction!
+
+#### 2. Scraping Prometheus Telemetry
+View real-time OpenMetrics time-series metrics from the backend:
+
+```bash
+curl -s http://localhost:8000/actuator/prometheus | grep -E "resilience4j_circuitbreaker_state|http_server_requests" | head -10
+```
+
+---
+
 ## 4. Testing Fault Tolerance & Chaos Injection
 
 You can test the system's resilience by adjusting the mock vendor's fault injection rate.

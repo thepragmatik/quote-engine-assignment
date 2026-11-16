@@ -1,9 +1,12 @@
 server:
   port: 8000
+  shutdown: graceful
 
 # Security Note: strict deserialization — unknown properties in request bodies are rejected
 # (Jackson 3 flipped the 2.x default to lenient; the QuoteRequest annotation alone is not enough).
 spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   jackson:
     deserialization:
       fail-on-unknown-properties: true
@@ -63,4 +66,8 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: health,prometheus,metrics
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5p [traceId=%X{requestId:-none}] %t --- %-40.40logger{39} : %m%n"
